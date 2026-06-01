@@ -1,0 +1,691 @@
+% =============================================================
+% report.tex - Elaborat k projektu LPI, Tema 9
+%   Odporucaci system filmov, serialov, knih a videohier v jazyku Prolog
+% =============================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[slovak]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black,
+  citecolor=blue!60!black
+}
+
+% Listings style pre Prolog
+\definecolor{prologkw}{rgb}{0.0,0.0,0.6}
+\definecolor{prologcom}{rgb}{0.4,0.5,0.4}
+\definecolor{prologstr}{rgb}{0.6,0.0,0.0}
+
+\lstdefinelanguage{prolog}{
+  morekeywords={findall,setof,bagof,member,length,sort,format,nl,
+                forall,write,writeln,is,not,fail,true,false,
+                consult,halt,assert,retract,reverse},
+  sensitive=true,
+  morecomment=[l]{\%},
+  morestring=[b]',
+  morestring=[b]"
+}
+\lstset{
+  language=prolog,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{prologkw}\bfseries,
+  commentstyle=\color{prologcom}\itshape,
+  stringstyle=\color{prologstr},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  captionpos=b
+}
+
+\title{
+  \large Logické programovanie a inferencia (LPI) \\[0.4em]
+  \LARGE Odporúčací systém filmov, seriálov, kníh a videohier v jazyku Prolog \\[0.4em]
+  \large Téma 9: Program odporúčajúci filmy/knihy/technológie
+}
+\author{
+  Tím~--- Jozef Belušák, Ján Kapurík, Adam Peško, Robert Kardošš, Branislav Zurian, Dávid Tkáč \\
+  Technická univerzita v~Košiciach, Fakulta elektrotechniky a informatiky
+}
+\date{máj 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+V~práci predstavujeme \emph{vysvetliteľný odporúčací systém}
+implementovaný v~jazyku SWI-Prolog. Na rozdiel od bežných
+filmových odporúčačov rozširujeme doménu na štyri prepojené
+typy obsahu --- \textbf{filmy, seriály, knihy a~videohry} --- a~staviame
+ich na spoločný dátový model. Vďaka tomu vie systém ponúknuť
+\textbf{cross-domain} odporúčania (\uv{páči sa mi film $\Rightarrow$
+možno sa mi bude páčiť hra rovnakého žánru}), \textbf{reverzné
+dopyty} (\uv{kto všetko by mal rád konkrétnu hru?}) i~tranzitívne
+  \textbf{cestovanie po grafe vzťahov} (žáner, krajina, štúdio,
+  tvorca) aj constraint výber filmového večera do časového limitu.
+  Hlavnou hodnotou je transparentnosť --- pre každé
+odporúčanie vie systém vygenerovať vysvetlenie zložené
+z~konkrétnych pravidiel.
+\end{abstract}
+
+\section{Motivácia problému}
+
+Odporúčacie systémy patria medzi najbežnejšie nasadené aplikácie
+umelej inteligencie. Stretávame sa s nimi denne --- Netflix nám
+navrhuje filmy, Spotify skladby, Amazon produkty, YouTube ďalšie
+video. Komerčné systémy dnes prevažne stavajú na štatistických
+modeloch a~neurónových sieťach. Tieto prístupy dosahujú výbornú
+presnosť, no majú jednu zásadnú slabinu --- sú
+\textbf{netransparentné}. Používateľ dostane odporúčanie, ale
+nikto presne nevie, prečo práve toto. Vznikajú otázky o~spravodlivosti,
+manipulácii a~\emph{filter bubble} fenoméne.
+
+V~poslednom čase narastá záujem o~\emph{vysvetliteľnú umelú
+inteligenciu} (\emph{explainable AI}, XAI). A~práve tu má
+\textbf{logické programovanie} prirodzenú výhodu: každé
+odporúčanie možno spätne odôvodniť reťazcom použitých pravidiel.
+Prolog predstavuje historicky overený nástroj, v~ktorom je
+modelovanie pravidlami prvotriednou občianskou kategóriou ---
+nie dodatočnou nadstavbou.
+
+Náš projekt ide o~krok ďalej než typické filmové demo. Doménu
+sme rozšírili o~\textbf{seriály, knihy a~videohry}, modelované cez jednotný
+predikát \texttt{polozka/4}. To otvára celkom novú triedu
+dopytov, ktoré klasický filmový odporúčač nevie:
+
+\begin{itemize}[noitemsep]
+  \item \emph{Páči sa mi film Dune $\Rightarrow$} odporuč mi
+        knihu Dune (filmová adaptácia rovnakého románu, spoločné
+        fiktívne univerzum), prípadne hru Mass Effect (zdieľaný
+        žáner sci-fi).
+  \item \emph{Kto všetko by mal rád hru The Witcher~3?} ---
+        reverzný filter ponad pravidlo \texttt{odporucam/2}.
+  \item \emph{Z~filmu Dune sa cez graf zdieľaných atribútov
+        (žáner $\to$ krajina $\to$ tvorca) dostať k~hre
+        Dark~Souls.}
+  \item \emph{Vyber mi filmový večer do 300 minút} ---
+        optimalizácia nad odporúčanými filmami cez CLP(FD).
+\end{itemize}
+
+\section{Aktuálny stav v~oblasti}
+
+Existujú tri hlavné triedy odporúčacích systémov.
+
+\paragraph{Content-based filtering} odporúča položky podobné
+tým, ktoré sa používateľovi páčili v~minulosti. Pracuje
+s~atribútmi položiek (žáner, autor, kľúčové slová). Výhodou
+je nezávislosť od~ostatných používateľov a~dobrá
+vysvetliteľnosť. Nevýhodou je obmedzená diverzita --- systém
+má sklony zacykliť používateľa do~\emph{filter bubble}.
+
+\paragraph{Collaborative filtering} odporúča to, čo sa páčilo
+iným podobným používateľom. Nepotrebuje atribúty položiek, stačia
+hodnotenia. Je to prístup, na ktorom je postavený napr. pôvodný
+Netflix Prize algoritmus~\cite{aggarwal2016}. Slabou stránkou
+je~\emph{cold start problem} --- nového používateľa alebo novú
+položku systém nevie kam zaradiť.
+
+\paragraph{Hybridné systémy} kombinujú oba prístupy a~v~praxi
+dnes dominujú. Moderné implementácie (YouTube, TikTok, Spotify)
+k~tomu pridávajú hlboké neurónové siete, ktoré z~histórie
+interakcií učia latentné reprezentácie.
+
+Logické a~\emph{knowledge-based} prístupy tvoria menšinovú,
+no dobre etablovanú vetvu~\cite{burke2000,felfernig2008}. Sú
+obzvlášť úspešné v~doménach, kde používateľ kupuje položku
+zriedka (autá, dovolenky, hypotéky) a~kde je dôležité formálne
+odôvodnenie. Náš projekt patrí do~tejto kategórie.
+
+\section{Teoretické východiská}
+
+\subsection{Logické programovanie a~Hornove klauzuly}
+
+Logické programovanie vychádza z~fragmentu predikátovej logiky
+prvého rádu --- \textbf{Hornových klauzúl}. Hornova klauzula má
+najviac jeden pozitívny literál a~v~Prologu sa zapisuje v~tvare
+
+\begin{lstlisting}[numbers=none]
+hlava :- telo1, telo2, ..., teloN.
+\end{lstlisting}
+
+\noindent
+čo zodpovedá logickej implikácii
+$\textit{telo1} \land \dots \land \textit{teloN} \Rightarrow
+\textit{hlava}$.
+
+\subsection{SLD-rezolúcia a~unifikácia}
+
+Prolog dokazuje cieľ pomocou \textbf{SLD-rezolúcie}
+(\emph{Selective Linear resolution for Definite clauses}).
+Pri každom kroku vyberie jeden cieľ z~pracovnej množiny, nájde
+klauzulu, ktorej hlavu možno \textbf{unifikovať} s~týmto cieľom,
+a~nahradí cieľ telom danej klauzuly~\cite{lloyd1987}.
+
+\subsection{Backtracking a~hľadanie všetkých riešení}
+
+Prolog používa stratégiu \textbf{prehľadávania do~hĺbky
+s~backtrackingom}. Ak nejaký podcieľ zlyhá, systém sa vráti
+k~poslednému miestu, kde existovali ďalšie alternatívy
+(\emph{choice point}), a~vyskúša ich. Vďaka tomu jeden Prolog
+dopyt môže priniesť postupne \textbf{všetky} riešenia ---
+vlastnosť, ktorú v~iných paradigmách musíme manuálne emulovať
+generátormi alebo kolekciami.
+
+\subsection{Negácia ako neúspech (NAF)}
+
+Klasická logika nedovoľuje z~neprítomnosti dôkazu odvodiť
+negáciu. Prolog používa pragmatický variant ---
+\emph{negation as failure} (\texttt{\textbackslash+}): cieľ
+\texttt{\textbackslash+ G} uspeje práve vtedy, keď sa nepodarí
+dokázať \texttt{G}. Tento princíp je nutný napr. pre vyjadrenie
+\uv{používateľ ešte nekonzumoval položku}:
+
+\begin{lstlisting}[numbers=none]
+este_nekonzumoval(P, F) :- \+ uz_konzumoval(P, F).
+\end{lstlisting}
+
+\noindent Ide o~tzv. \emph{closed world assumption} ---
+predpokladáme, že znalostná báza obsahuje všetko relevantné
+a~všetko ostatné je nepravdivé.
+
+\section{Popis riešenia}
+
+\subsection{Architektúra}
+
+Systém má tri logické vrstvy:
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Znalostná báza} --- fakty o~55 položkách
+        (15 filmov, 10 seriálov, 15 kníh, 15 hier) a~5~používateľoch.
+  \item \textbf{Inferenčné pravidlá} --- pomocné, hlavné
+        odporúčanie, skórovanie, vysvetlenie, collaborative
+        filtering, cross-domain odporúčanie, filter
+        \emph{fanúšikovia}, graf pribuznosti a~constraint
+        odporúčanie.
+  \item \textbf{Rozhranie} --- demonštračné dopyty
+        v~\texttt{examples.pl}.
+\end{enumerate}
+
+\subsection{Unifikovaný dátový model \texttt{polozka/4}}
+\label{sec:dm}
+
+Kľúčovým návrhovým rozhodnutím je \textbf{zjednotenie štyroch
+domén} (film, seriál, kniha, hra) pod jeden predikát:
+
+\begin{lstlisting}[caption={Reprezentácia položiek}]
+% polozka(+Id, +Typ, +Nazov, +Rok)
+%   Typ in {film, serial, kniha, hra}
+polozka(inception, film, 'Inception', 2010).
+polozka(breaking_bad, serial, 'Breaking Bad', 2008).
+polozka(dune_book, kniha, 'Dune', 1965).
+polozka(witcher3,  hra, 'The Witcher 3: Wild Hunt', 2015).
+\end{lstlisting}
+
+Spoločné atribúty platia pre všetky typy:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Predikát} & \textbf{Aritnosť} & \textbf{Význam}\\
+\midrule
+\texttt{zaner/2}       & (Id, Žáner)       & žáner položky\\
+\texttt{hodnotenie/2} & (Id, Skóre)       & hodnotenie 1--10\\
+\texttt{krajina/2}    & (Id, Krajina)     & krajina pôvodu\\
+\texttt{studio/2}     & (Id, Štúdio)      & štúdio / vydavateľstvo / platforma\\
+\texttt{tvorca/3}     & (Id, Rola, Meno)  & režisér / showrunner / autor / vývojár\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Typovo-špecifické sú len rozmery: \texttt{dlzka/2} (minúty
+pre filmy), \texttt{epizody/2} (pre seriály), \texttt{strany/2}
+(pre knihy) a~\texttt{dlzka\_hry/2} (hodiny pre hry). Tieto sa konzumujú jediným polymorfným
+filtrom \texttt{vyhovuje\_rozmeru/3}, ktorý dispatchuje podľa
+typu.
+
+\subsection{Hlavné inferenčné pravidlo}
+
+\begin{lstlisting}
+odporucam(P, Polozka) :-
+    polozka(Polozka, Typ, _, _),
+    pouzivatel_chce_typ(P, Typ),
+    once(vyhovuje_zaneru(P, Polozka)),
+    vyhovuje_hodnoteniu(P, Polozka),
+    vyhovuje_rozmeru(P, Polozka, Typ),
+    este_nekonzumoval(P, Polozka).
+\end{lstlisting}
+
+\noindent
+Pravidlo hovorí, že položka je odporúčaná používateľovi vtedy,
+keď simultánne platí: typ patrí medzi obľúbené, žáner sa
+zhoduje, hodnotenie je dostatočne vysoké, rozmer (dĺžka filmu /
+počet strán / dĺžka hry) je v~limite, a~používateľ položku ešte
+nekonzumoval. Operátor \texttt{once/1} zabezpečí, že každú
+položku vráti backtracking iba raz, aj keď je žánrov spoločných
+viacero.
+
+\subsection{Skórovanie a~zoraďovanie}
+
+\begin{lstlisting}
+skore_odporucania(P, Polozka, Skore) :-
+    hodnotenie(Polozka, H),
+    ( vyhovuje_zaneru(P, Polozka) -> BZ = 2 ; BZ = 0 ),
+    ( bonus_tvorcu(P, Polozka)   -> BT = 3 ; BT = 0 ),
+    ( bonus_krajiny(P, Polozka)  -> BK = 1 ; BK = 0 ),
+    ( bonus_studia(P, Polozka)   -> BS = 1 ; BS = 0 ),
+    Skore is H + BZ + BT + BK + BS.
+\end{lstlisting}
+
+Skóre je súčet hodnotenia ($1$--$10$), bonusu za~žáner ($+2$),
+za~obľúbeného tvorcu ($+3$), za~krajinu ($+1$) a~za~štúdio
+($+1$). Maximum je teda~$17$.
+
+\subsection{Vysvetľovanie odporúčaní}
+
+Hlavnou pridanou hodnotou logického prístupu je
+\textbf{transparentnosť}. Predikát
+\texttt{dovody\_odporucania/3} najprv vráti dôvody ako čisté
+Prolog termy (typ, žáner, hodnotenie, rozmer, tvorca, krajina
+a~štúdio). Predikát \texttt{vysvetli/2} je potom už len
+prezentačná vrstva, ktorá tieto dôvody vypíše používateľovi.
+Tým sú vysvetlenia zároveň testovateľné v~PlUnit testoch.
+
+\subsection{Collaborative filtering}
+
+Pôvodné jednoduché pravidlo \uv{zdieľajú aspoň dva žánre} sme
+rozšírili na skórovanú podobnosť používateľov. Predikát
+\texttt{podobnost\_pouzivatelov/4} porovná spoločné žánre, typy
+obsahu, tvorcov, krajiny a~štúdiá; žáner a~tvorca majú vyššiu váhu
+ako pomocné atribúty. Používatelia sú považovaní za podobných, keď
+dosiahnu skóre aspoň~4.
+
+\begin{lstlisting}
+podobni_pouzivatelia(P1, P2) :-
+    podobnost_pouzivatelov(P1, P2, Skore),
+    Skore >= 4.
+\end{lstlisting}
+
+\noindent
+Samotné \texttt{odporucam\_collaborative/2} už navyše rešpektuje
+obľúbený typ cieľovej položky aj typovo špecifický rozmerový limit.
+
+\subsection{Cross-domain odporúčanie}
+
+Hlavná pridaná hodnota oproti pôvodnému filmovému demu je
+\emph{prepojenie domén}:
+
+\begin{lstlisting}
+cross_domain_odporucam(P, Zdroj, Ciel, Dovod) :-
+    uz_konzumoval(P, Zdroj),
+    polozka(Zdroj, TypZdroj, _, _),
+    polozka(Ciel,  TypCiel,  _, _),
+    TypZdroj \= TypCiel,
+    pouzivatel_chce_typ(P, TypCiel),
+    este_nekonzumoval(P, Ciel),
+    vyhovuje_hodnoteniu(P, Ciel),
+    vyhovuje_rozmeru(P, Ciel, TypCiel),
+    cross_dovod(Zdroj, Ciel, Dovod).
+
+cross_dovod(Z, C, spolocny_zaner(X))   :- zaner(Z,X), zaner(C,X).
+cross_dovod(Z, C, spolocny_tvorca(M))  :- tvorca(Z,_,M), tvorca(C,_,M).
+cross_dovod(Z, C, spolocna_krajina(K)) :- krajina(Z,K), krajina(C,K).
+cross_dovod(Z, C, spolocne_studio(S))  :- studio(Z,S), studio(C,S).
+\end{lstlisting}
+
+\noindent
+Predikát \texttt{cross\_dovod/3} formálne zachytáva most medzi
+dvomi položkami z~rôznych domén --- spoločným žánrom, tvorcom,
+krajinou alebo štúdiom. Backtracking automaticky vygeneruje
+všetky aplikovateľné mosty.
+
+\subsection{Filter \uv{kto má rád X} (fanúšikovia)}
+
+\begin{lstlisting}
+fanusikovia(Polozka, Pouzivatelia) :-
+    findall(P,
+            ( pouzivatel(P, _),
+              ( odporucam(P, Polozka)
+              ; uz_konzumoval(P, Polozka) ) ),
+            Zoznam),
+    sort(Zoznam, Pouzivatelia).
+\end{lstlisting}
+
+\noindent
+Toto je \emph{reverzný dopyt} nad pravidlom \texttt{odporucam/2}.
+Tam, kde štandardný odporúčač pre zadaného používateľa hľadá
+položky, my pre zadanú položku hľadáme používateľov.
+Rozšírená verzia \texttt{fanusikovia\_s\_dovodmi/2} ku každému
+fanúšikovi priloží aj konkrétne dôvody zhody.
+
+\subsection{Cestovanie po grafe vzťahov}
+\label{sec:graf}
+
+Položky v~znalostnej báze tvoria graf prepojený cez zdieľané
+atribúty. Predikát \texttt{pribuzne\_polozky/3} určuje silu
+prepojenia ako počet rôznych zdieľaných atribútov:
+
+\begin{lstlisting}
+pribuzne_polozky(P1, P2, Sila) :-
+    polozka(P1,_,_,_), polozka(P2,_,_,_), P1 \= P2,
+    findall(A, zdielany_atribut(P1, P2, A), AtrZoznam),
+    list_to_set(AtrZoznam, Spolocne),
+    length(Spolocne, Sila),
+    Sila > 0.
+\end{lstlisting}
+
+\noindent
+Tranzitívna verzia \texttt{retazec/4} vie nájsť cestu medzi
+dvomi položkami v~grafe pribuznosti do~zadaného počtu krokov.
+Vďaka backtrackingu a~detekcii cyklov (\texttt{\textbackslash+
+member(\dots, Acc)}) je hľadanie kompletné a~bezpečné.
+
+\subsection{Adaptácie, univerzá a~hybridné skóre}
+\label{sec:hybrid}
+
+Doteraz sme prepájali domény len cez zdieľané \emph{atribúty}
+(žáner, krajina, štúdio, tvorca). Tento prístup však necháva
+nezachytené dve silné prepojenia: explicitnú \textbf{adaptáciu}
+jedného diela na druhé (film podľa knihy, hra podľa knihy)
+a~\textbf{spoločné fiktívne univerzum} (Tolkienovo Stredozemie
+obsahuje aj \emph{Hobbita}, aj \emph{Pán prsteňov}). Tieto
+prepojenia patria do~znalostnej bázy ako samostatné fakty:
+
+\begin{lstlisting}[caption={Adaptácie a~univerzá}]
+adaptacia(dune,     dune_book).     % film 2021 podla knihy 1965
+adaptacia(witcher3, witcher_book).  % hra podla Sapkowskeho knih
+
+univerzum(dune,         dune_universe).
+univerzum(dune_book,    dune_universe).
+univerzum(witcher3,     witcher_universe).
+univerzum(witcher_book, witcher_universe).
+univerzum(hobbit,       middle_earth).
+univerzum(lotr,         middle_earth).
+\end{lstlisting}
+
+\noindent
+Cross-domain odporúčač sa rozšíri o~dva nové \emph{mosty} ---
+stačí pridať klauzuly k~existujúcemu predikátu \texttt{cross\_dovod/3}:
+
+\begin{lstlisting}
+cross_dovod(Z, C, spolocne_univerzum(U)) :-
+    univerzum(Z, U), univerzum(C, U).
+
+cross_dovod(Z, C, adaptacia) :-
+    ( adaptacia(Z, C) ; adaptacia(C, Z) ).
+\end{lstlisting}
+
+\noindent
+\textbf{Hybridné skóre} potom kombinuje content-based skóre
+s~ďalšími tromi signálmi:
+
+\begin{lstlisting}
+hybridne_skore(P, Polozka, Skore) :-
+    skore_odporucania(P, Polozka, Content),
+    ( bonus_collab(P, Polozka)    -> BC = 3 ; BC = 0 ),
+    ( bonus_adaptacia(P, Polozka) -> BA = 2 ; BA = 0 ),
+    ( bonus_univerzum(P, Polozka) -> BU = 2 ; BU = 0 ),
+    Skore is Content + BC + BA + BU.
+\end{lstlisting}
+
+\noindent
+Bonusy modelujú tri intuície: (1)~\emph{collaborative} ---
+\uv{niektorý podobný používateľ to už konzumoval}; (2)~\emph{adaptácia}
+--- \uv{už si videl iný formát toho istého diela}; (3)~\emph{univerzum}
+--- \uv{už si konzumoval iné dielo z~tohto sveta}. Maximum
+hybridného skóre je teda~$10 + 2 + 3 + 1 + 1 + 3 + 2 + 2 = 24$.
+
+\subsection{Constraint odporúčanie cez CLP(FD)}
+
+Okrem jednotlivých odporúčaní systém obsahuje aj malý optimalizačný
+problém: \texttt{filmovy\_vecer/5}. Zo všetkých filmov odporúčaných
+danému používateľovi vyberie neprázdny podzoznam tak, aby sa zmestil
+do zadaného časového limitu a~maximalizoval súčet skóre.
+
+\begin{lstlisting}
+filmovy_vecer(P, MaxMinut, Vyber, Dlzka, Skore) :-
+    ...,
+    scalar_product(Dlzky, Bity, #=, Dlzka),
+    scalar_product(SkoreFilm, Bity, #=, Skore),
+    Dlzka #=< MaxMinut,
+    sum(Bity, #>=, 1),
+    labeling([max(Skore)], Bity).
+\end{lstlisting}
+
+\noindent
+Tento príklad ukazuje, že Prolog nemusí len filtrovať fakty, ale
+vie riešiť aj kombinatorické úlohy s~tvrdými obmedzeniami.
+
+\section{Ukážky použitia}
+
+Všetky výstupy boli získané spustením
+\texttt{swipl -q -g run\_all -t halt examples.pl}.
+
+\subsection{Príklad 1 --- základné odporúčanie}
+
+\begin{lstlisting}[numbers=none]
+?- odporucam(jan, P).
+  -> [film]  Interstellar (2014)
+  -> [film]  Parasite (2019)
+  -> [film]  Joker (2019)
+  -> [film]  Dune (2021)
+  -> [film]  The Shining (1980)
+  -> [film]  Arrival (2016)
+  -> [film]  Blade Runner (1982)
+  -> [kniha] Dune (1965)
+  -> [kniha] Foundation (1951)
+  -> [kniha] Hyperion (1989)
+  -> [kniha] Neuromancer (1984)
+  -> [kniha] The Martian (2011)
+  -> [kniha] Gone Girl (2012)
+  -> [serial] Breaking Bad (2008)
+  -> [serial] Stranger Things (2016)
+  -> [serial] The Expanse (2015)
+  -> [serial] Chernobyl (2019)
+  -> [serial] True Detective (2014)
+  -> [serial] Westworld (2016)
+  -> [serial] The Mandalorian (2019)
+\end{lstlisting}
+
+\subsection{Príklad 3 --- vysvetlenie}
+
+\begin{lstlisting}[numbers=none]
+?- vysvetli(jan, interstellar).
+Polozka: Interstellar (film, 2014)
+  - Typ: film (pouzivatel ho chce)
+  - Zaner: sci_fi (oblubeny)
+  - Hodnotenie: 9/10 (minimum 8)
+  - Dlzka filmu: 169 min (maximum 170)
+  - reziser: nolan (oblubeny)
+  - Krajina: usa (oblubena)
+\end{lstlisting}
+
+Toto je presne ten typ výstupu, aký moderné komerčné systémy
+len ťažko poskytujú --- každé odporúčanie je odôvodnené
+konkrétnymi pravidlami.
+
+\subsection{Príklad 6 --- cross-domain (z~filmu na hru alebo seriál)}
+
+\begin{lstlisting}[numbers=none]
+?- cross_domain_odporucam(peter, dune, C, D).
+  -> [serial] Arcane             (spolocna_krajina(usa))
+  -> [serial] Arcane             (spolocny_zaner(akcia))
+  -> [hra] BioShock              (spolocna_krajina(usa))
+  -> [hra] BioShock              (spolocny_zaner(akcia))
+  -> [hra] BioShock              (spolocny_zaner(sci_fi))
+  -> [serial] Black Mirror       (spolocny_zaner(sci_fi))
+  -> [serial] Breaking Bad       (spolocna_krajina(usa))
+  -> [serial] Chernobyl          (spolocna_krajina(usa))
+  -> [hra] Cyberpunk 2077        (spolocny_zaner(sci_fi))
+  -> [serial] Game of Thrones    (spolocna_krajina(usa))
+  -> [hra] Half-Life 2           (spolocna_krajina(usa))
+  -> [hra] Half-Life 2           (spolocny_zaner(akcia))
+  -> [hra] Half-Life 2           (spolocny_zaner(sci_fi))
+  -> [hra] Horizon Zero Dawn     (spolocny_zaner(akcia))
+  -> [hra] Horizon Zero Dawn     (spolocny_zaner(sci_fi))
+  -> [hra] The Last of Us        (spolocna_krajina(usa))
+  -> [hra] The Last of Us        (spolocny_zaner(akcia))
+  -> [serial] The Mandalorian    (spolocna_krajina(usa))
+  -> [serial] The Mandalorian    (spolocny_zaner(akcia))
+  -> [serial] The Mandalorian    (spolocny_zaner(sci_fi))
+  -> [hra] Mass Effect           (spolocny_zaner(sci_fi))
+  -> [hra] Portal 2              (spolocna_krajina(usa))
+  -> [hra] Portal 2              (spolocny_zaner(sci_fi))
+  -> [hra] Red Dead Redemption 2 (spolocna_krajina(usa))
+  -> [hra] Red Dead Redemption 2 (spolocny_zaner(akcia))
+  -> [serial] The Expanse        (spolocna_krajina(usa))
+  -> [serial] The Expanse        (spolocny_zaner(sci_fi))
+  -> [serial] True Detective     (spolocna_krajina(usa))
+  -> [serial] Westworld          (spolocna_krajina(usa))
+  -> [serial] Westworld          (spolocny_zaner(sci_fi))
+\end{lstlisting}
+
+\subsection{Príklad 7 --- fanúšikovia hry}
+
+\begin{lstlisting}[numbers=none]
+?- fanusikovia(witcher3, U).
+U = [maria, tomas].
+
+?- fanusikovia_s_dovodmi(witcher3, P).
+P = [ maria-[zaner(fantasy), zaner(rpg),
+             tvorca(sapkowski), krajina(polsko),
+             studio(cd_projekt_red)],
+      tomas-[zaner(akcia), zaner(rpg),
+             krajina(polsko), studio(cd_projekt_red)] ].
+\end{lstlisting}
+
+\subsection{Príklad 8 --- cesta v~grafe vzťahov}
+
+\begin{lstlisting}[numbers=none]
+?- retazec(amelie, dark_souls, 4, Cesta).
+  [film]  Amelie  -->
+  [film]  Forrest Gump  -->
+  [film]  Inception  -->
+  [kniha] The Name of the Wind  -->
+  [hra]   Dark Souls
+\end{lstlisting}
+
+\subsection{Príklad 9 --- adaptácie, univerzá a~hybridné skóre}
+
+Maria už čítala \emph{Hobbita} a~hrala \emph{Witcher~3}. Vďaka
+tomu cross-domain odporúčač cez most \emph{adaptacia}
+a~\emph{spolocne\_univerzum} navrhne knižného \emph{The Last
+Wish}, a~hybridné skóre vyzdvihne aj \emph{Lord of the Rings}
+(rovnaké stredozemné univerzum):
+
+\begin{lstlisting}[numbers=none]
+?- cross_domain_odporucam(maria, witcher3, C, D),
+   ( D = adaptacia ; D = spolocne_univerzum(_) ).
+-> [kniha] The Last Wish  (spolocne_univerzum(witcher_universe))
+-> [kniha] The Last Wish  (adaptacia)
+
+?- top_hybridne(maria, T).
+1. [kniha] The Last Wish      (content=14, hybrid=18)
+2. [kniha] The Lord of the Rings (content=16, hybrid=18)
+3. [hra] The Legend of Zelda: Breath of the Wild (content=12, hybrid=12)
+4. [hra] Disco Elysium        (content=12, hybrid=12)
+5. [hra] Cyberpunk 2077       (content=12, hybrid=12)
+\end{lstlisting}
+
+\noindent
+Príklad ilustruje, ako sa explicitne modelované vzťahy
+(\texttt{adaptacia/2}, \texttt{univerzum/2}) prejavia bez
+akéhokoľvek štatistického učenia --- iba ako logické dôsledky
+nových faktov a~jednej rozšírenej definície \texttt{cross\_dovod}.
+
+\subsection{Príklad 10 --- constraint výber filmového večera}
+
+\begin{lstlisting}[numbers=none]
+?- filmovy_vecer(jan, 300, Vyber, Dlzka, Skore).
+Dlzka = 286,
+Skore = 27,
+Vyber = [interstellar, blade_runner].
+\end{lstlisting}
+
+\noindent
+Výsledok znamená, že z~Janových odporúčaných filmov systém vybral
+kombináciu \emph{Interstellar} a~\emph{Blade Runner}: spolu majú 286 minút
+a~v~limite 300 minút dosahujú najvyšší súčet skóre.
+
+\section{Diskusia výsledkov}
+
+\paragraph{Silné stránky.} (1)~Transparentnosť a~vysvetliteľnosť ---
+systém vie pre každé odporúčanie zdôvodniť, prečo bolo dané.
+(2)~Modulárnosť --- pridanie nového pravidla, nového atribútu,
+novej domény (napr. hudby) znamená dopísanie pár faktov, bez
+zásahu do~existujúcej logiky. (3)~Deklaratívnosť --- kód
+popisuje \emph{čo} má platiť, nie \emph{ako} to spočítať.
+(4)~Cross-domain prepojenia bezo~zmeny architektúry vďaka
+unifikovanému dátovému modelu.
+
+\paragraph{Obmedzenia.} (1)~Malá znalostná báza
+(55~položiek, 5~používateľov). V~reálnom Netflixe ide
+o~desiatky tisíc položiek a~milióny používateľov.
+(2)~Bez učenia z~dát --- pravidlá sú zafixované expertom.
+V~hybridnom prístupe by Prolog mohol slúžiť ako symbolický
+modul nad ML predikciami. (3)~Collaborative filtering používa
+ručne navrhnuté váhy podobnosti namiesto učených latentných
+reprezentácií alebo kosínusovej podobnosti nad veľkou maticou
+hodnotení.
+
+\paragraph{Možné rozšírenia.}
+\begin{enumerate}[noitemsep]
+  \item Načítanie znalostnej bázy z~CSV/JSON
+        (\texttt{library(csv)}, \texttt{library(http/json)}).
+  \item Webové rozhranie cez \texttt{library(http/thread\_httpd)}.
+  \item Negatívne vysvetlenia: predikát
+        \texttt{preco\_neodporucam/3}, ktorý vráti dôvody zlyhania.
+  \item Probabilistické rozšírenie cez ProbLog ---
+        kvantifikácia neistoty v~preferenciách.
+  \item Pridanie ďalších domén (hudba, podcasty, technológie)
+        --- vďaka unifikovanému modelu len ako nové fakty.
+\end{enumerate}
+
+\section{Rozdelenie práce v~tíme}
+
+\begin{center}
+\begin{tabular}{>{\bfseries}lp{6cm}l}
+\toprule
+Člen & Zodpovednosť & Súbory\\
+\midrule
+Člen 1 & Dátový model \texttt{polozka/4}, znalostná báza
+         (55~položiek, 5~používateľov) & \texttt{program.pl} (§1)\\
+Člen 2 & Hlavné inferenčné pravidlo \texttt{odporucam/2},
+         predikáty \texttt{vyhovuje\_*}, polymorfný filter
+         rozmerov & \texttt{program.pl} (§2.A--B)\\
+Člen 3 & Pokročilá inferencia: skórovanie, top, vysvetlenie,
+         collaborative, \textbf{cross-domain},
+         \textbf{fanúšikovia}, \textbf{graf vzťahov},
+         \textbf{adaptácie / univerzá}, \textbf{hybridné skóre},
+         \textbf{constraint odporúčanie} &
+         \texttt{program.pl} (§2.C--G)\\
+Člen 4 & Demonštračné príklady (10~scenárov), PlUnit regresné
+         testy & \texttt{examples.pl}, \texttt{tests.pl},
+         \texttt{README.md}\\
+Člen 5 & Elaborát, prezentácia, koordinácia tímu &
+         \texttt{src/report.tex}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Práca prebiehala v~týždenných iteráciách s~krížovou revíziou kódu.
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
+
+\end{document}
