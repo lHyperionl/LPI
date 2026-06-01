@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+.vscode
+*.md
+src
+tests.pl
+examples.pl
+report.pdf
+*.log
+*.aux
+*.pdf
+.DS_Store
