@@ -29,7 +29,8 @@ export function useApi<T>(
         if (alive) setData(json as T);
       })
       .catch((e) => {
-        if (alive) setError(String(e));
+        console.error("useApi error:", e);
+        if (alive) setError("Nepodarilo sa načítať dáta. Skúste to znova.");
       })
       .finally(() => {
         if (alive) setLoading(false);

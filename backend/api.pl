@@ -25,18 +25,18 @@
 :- use_module(library(http/http_server)).
 
 % Znalostna baza + pravidla (NEZMENENE).
-% V Docker image je program.pl skopirovany vedla api.pl; pri lokalnom
-% vyvoji je v rodicovskom adresari.  Skusime obe.
-:- ( exists_file('program.pl')
-   -> consult('program.pl')
-   ;  exists_file('../program.pl')
-   -> consult('../program.pl')
-   ;  print_message(error, format("program.pl sa nenasiel", []))
-   ).
+% Resolved relative to this file's directory so `swipl backend/api.pl`
+% from the project root works alongside Docker (CWD = /app).
+:- prolog_load_context(directory, Dir),
+   directory_file_path(Dir, 'program.pl', ProgramPl),
+   consult(ProgramPl).
 
-% Povol CORS pre vsetky originy (pohodlne pri vyvoji aj pri priamom
-% pristupe k API).
-:- set_setting_default(http:cors, [*]).
+% Povol CORS len pre explicitne zname originy.
+% Pridaj dalsi origin sem ak potrebujes priamy pristup z browsera.
+:- set_setting_default(http:cors, [
+    'http://localhost:3000',
+    'http://web:3000'
+]).
 
 
 % =============================================================

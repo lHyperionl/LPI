@@ -208,18 +208,24 @@ a~všetko ostatné je nepravdivé.
 
 \subsection{Architektúra}
 
-Systém má tri logické vrstvy:
+Systém má štyri logické vrstvy:
 
 \begin{enumerate}[noitemsep]
   \item \textbf{Znalostná báza} --- fakty o~55 položkách
-        (15 filmov, 10 seriálov, 15 kníh, 15 hier) a~5~používateľoch.
+        (15 filmov, 10 seriálov, 15 kníh, 15 hier) a~5~používateľoch
+        (\texttt{backend/program.pl}, sekcia 1).
   \item \textbf{Inferenčné pravidlá} --- pomocné, hlavné
         odporúčanie, skórovanie, vysvetlenie, collaborative
         filtering, cross-domain odporúčanie, filter
         \emph{fanúšikovia}, graf pribuznosti a~constraint
-        odporúčanie.
-  \item \textbf{Rozhranie} --- demonštračné dopyty
-        v~\texttt{examples.pl}.
+        odporúčanie (\texttt{backend/program.pl}, sekcie 2A--2G).
+  \item \textbf{HTTP API} --- tenká JSON vrstva \texttt{backend/api.pl}
+        nad \texttt{program.pl}; každý handler pozbiera riešenia
+        cez \texttt{findall/setof} a~pošle \texttt{reply\_json\_dict};
+        beží na porte 4000 cez \texttt{library(http/thread\_httpd)}.
+  \item \textbf{Webová aplikácia} --- interaktívny playground
+        v~Next.js 15 (\texttt{web/}); všetka logika zostáva
+        v~Prologu, frontend robí len proxy dopytov a~vizualizáciu.
 \end{enumerate}
 
 \subsection{Unifikovaný dátový model \texttt{polozka/4}}
@@ -471,6 +477,40 @@ filmovy_vecer(P, MaxMinut, Vyber, Dlzka, Skore) :-
 Tento príklad ukazuje, že Prolog nemusí len filtrovať fakty, ale
 vie riešiť aj kombinatorické úlohy s~tvrdými obmedzeniami.
 
+\subsection{Webová aplikácia a~HTTP API}
+\label{sec:web}
+
+Ako doplnok k~príkazovému riadku sme implementovali interaktívny
+webový \emph{playground}. Architektúra sa skladá z~dvoch kontajnerov
+riadených Docker Compose:
+
+\paragraph{Backend (\texttt{backend/api.pl})} je tenká HTTP JSON
+vrstva nad nezmeneným \texttt{program.pl}. Používa štandardnú
+knižnicu \texttt{library(http/thread\_httpd)} a~vystavuje 13
+endpointov --- napr.\ \texttt{/api/recommend}, \texttt{/api/hybrid},
+\texttt{/api/cross-domain} či \texttt{/api/movie-night}.
+Každý handler žiadnu logiku neduplikuje: iba pozbiera riešenia
+cez \texttt{findall/setof} a~prevedie Prolog termy na JSON
+pomocou \texttt{reply\_json\_dict}. Dôvody odporúčaní
+(štruktúrované Prolog termy) prevádza predikát
+\texttt{dovod\_json/2} na JSON objekty so štandardizovaným
+poľom \texttt{druh}.
+
+\paragraph{Frontend (\texttt{web/})} je aplikácia v~Next.js~15
+(App Router) s~Tailwind CSS. Stránka je renderovaná dynamicky
+(\texttt{force-dynamic}) --- každý dopyt ide na živý Prolog engine.
+Playground obsahuje deväť interaktívnych sekcií:
+content-based odporúčania s~vysvetleniami, hybridné skóre,
+collaborative filtering, cross-domain odporúčania, reverzný
+filter fanúšikov, graf vzťahov, constraint filmový večer
+a~štatistiky.
+
+Celý systém sa spustí jedným príkazom:
+\begin{lstlisting}[language=bash, numbers=none]
+docker compose up --build
+\end{lstlisting}
+a~je dostupný na \texttt{http://localhost:3000}.
+
 \section{Ukážky použitia}
 
 Všetky výstupy boli získané spustením
@@ -647,7 +687,6 @@ hodnotení.
 \begin{enumerate}[noitemsep]
   \item Načítanie znalostnej bázy z~CSV/JSON
         (\texttt{library(csv)}, \texttt{library(http/json)}).
-  \item Webové rozhranie cez \texttt{library(http/thread\_httpd)}.
   \item Negatívne vysvetlenia: predikát
         \texttt{preco\_neodporucam/3}, ktorý vráti dôvody zlyhania.
   \item Probabilistické rozšírenie cez ProbLog ---
@@ -664,21 +703,27 @@ hodnotení.
 Člen & Zodpovednosť & Súbory\\
 \midrule
 Člen 1 & Dátový model \texttt{polozka/4}, znalostná báza
-         (55~položiek, 5~používateľov) & \texttt{program.pl} (§1)\\
+         (55~položiek, 5~používateľov) &
+         \texttt{backend/program.pl} (§1)\\
 Člen 2 & Hlavné inferenčné pravidlo \texttt{odporucam/2},
          predikáty \texttt{vyhovuje\_*}, polymorfný filter
-         rozmerov & \texttt{program.pl} (§2.A--B)\\
+         rozmerov & \texttt{backend/program.pl} (§2.A--B)\\
 Člen 3 & Pokročilá inferencia: skórovanie, top, vysvetlenie,
          collaborative, \textbf{cross-domain},
          \textbf{fanúšikovia}, \textbf{graf vzťahov},
          \textbf{adaptácie / univerzá}, \textbf{hybridné skóre},
          \textbf{constraint odporúčanie} &
-         \texttt{program.pl} (§2.C--G)\\
+         \texttt{backend/program.pl} (§2.C--G)\\
 Člen 4 & Demonštračné príklady (10~scenárov), PlUnit regresné
-         testy & \texttt{examples.pl}, \texttt{tests.pl},
+         testy, \textbf{HTTP API} (\texttt{api.pl}),
+         \textbf{webová aplikácia} (Next.js) &
+         \texttt{backend/examples.pl}, \texttt{backend/tests.pl},
+         \texttt{backend/api.pl}, \texttt{web/},
          \texttt{README.md}\\
-Člen 5 & Elaborát, prezentácia, koordinácia tímu &
-         \texttt{src/report.tex}\\
+Člen 5 & Elaborát, prezentácia, koordinácia tímu,
+         Docker Compose a~nasadenie &
+         \texttt{docs/report.tex},
+         \texttt{docker-compose.yml}\\
 \bottomrule
 \end{tabular}
 \end{center}

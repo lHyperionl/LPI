@@ -17,15 +17,24 @@ po grafe vzťahov** medzi položkami.
 
 ```
 prolog_recommend_system/
-├── README.md             <- tento súbor
-├── report.pdf            <- elaborát (PDF — vyžaduje zadanie)
-├── program.pl            <- hlavný Prolog program (znalostná báza + pravidlá)
-├── examples.pl           <- 10 demonštračných príkladov
-├── tests.pl              <- PlUnit regresné testy
-└── src/
-    ├── report.tex        <- LaTeX zdrojový kód elaborátu
-    ├── bibliography.bib  <- BibTeX bibliografia
-    └── report.pdf        <- kompilovaný výstup
+├── README.md              <- tento súbor
+├── report.pdf             <- elaborát (PDF — skopírovaný z docs/)
+├── .env.example           <- vzorové premenné prostredia
+├── docker-compose.yml     <- orchestrácia backend + frontend kontajnerov
+├── backend/
+│   ├── Dockerfile         <- SWI-Prolog kontajner
+│   ├── program.pl         <- znalostná báza + inferenčné pravidlá
+│   ├── api.pl             <- tenká HTTP JSON API vrstva (port 4000)
+│   ├── examples.pl        <- 10 demonštračných príkladov
+│   └── tests.pl           <- PlUnit regresné testy
+├── docs/
+│   ├── report.tex         <- LaTeX zdrojový kód elaborátu
+│   ├── bibliography.bib   <- BibTeX bibliografia
+│   └── report.pdf         <- kompilovaný výstup
+└── web/                   <- Next.js frontendová aplikácia (port 3000)
+    ├── app/               <- Next.js App Router (page, layout, API routes)
+    ├── components/        <- React komponenty (playground sekcie)
+    └── lib/               <- typy, API klient, utility
 ```
 
 ---
@@ -55,19 +64,19 @@ Stiahni inštalátor zo stránky <https://www.swi-prolog.org/Download.html>.
 ### 1. Spustiť všetkých 10 príkladov naraz (neinteraktívne)
 
 ```bash
-swipl -q -g run_all -t halt examples.pl
+swipl -q -g run_all -t halt backend/examples.pl
 ```
 
 ### 1b. Spustiť automatické testy (PlUnit)
 
 ```bash
-swipl -q -g run_tests -t halt tests.pl
+swipl -q -g run_tests -t halt backend/tests.pl
 ```
 
 ### 2. Interaktívne dopyty
 
 ```bash
-swipl program.pl
+swipl backend/program.pl
 ```
 
 Príklady dopytov v `?-` prompt-e:
@@ -118,7 +127,7 @@ Príklady dopytov v `?-` prompt-e:
 ### 3. Spustenie jednotlivých príkladov
 
 ```bash
-swipl examples.pl
+swipl backend/examples.pl
 ?- priklad1.   % základné odporúčanie pre Jana
 ?- priklad2.   % top odporúčania zoradené podľa skóre (Anna)
 ?- priklad3.   % vysvetlenie odporúčania (Jan, Interstellar)
@@ -209,11 +218,11 @@ do časového limitu).
 
 ## Webová aplikácia (Next.js + SWI-Prolog)
 
-Súčasťou projektu je moderná single-page webová aplikácia (interaktívny _playground_), ktorá predvádza schopnosti systému tým, že volá reálny SWI-Prolog engine. frontend je napísaný v **Next.js** a komunikuje s tenkým HTTP backendom v Prologu.
+Súčasťou projektu je interaktívny _playground_ — moderná webová aplikácia, ktorá volá reálny SWI-Prolog engine a vizualizuje všetky schopnosti systému. Frontend je napísaný v **Next.js 15** (App Router) a komunikuje s tenkým HTTP backendom v Prologu.
 
 ### Spustenie webovej aplikácie
 
-Najjednoduchšia cesta je použiť Docker Compose, ktorý spustí oba kontajnery (frontend aj backend) naraz.
+Najjednoduchšia cesta je Docker Compose — spustí oba kontajnery (frontend aj backend) naraz.
 
 ```bash
 docker compose up --build
@@ -221,18 +230,49 @@ docker compose up --build
 
 Následne otvor prehliadač na `http://localhost:3000`.
 
+#### Lokálny vývoj (bez Dockeru)
+
+```bash
+# 1. Backend (Prolog API na porte 4000)
+swipl backend/api.pl
+
+# 2. Frontend (Next.js na porte 3000)
+cd web
+cp ../.env.example .env.local   # nastav PROLOG_API_URL=http://localhost:4000
+npm install
+npm run dev
+```
+
+### API endpointy (backend/api.pl, port 4000)
+
+| Endpoint | Parametre | Popis |
+| --- | --- | --- |
+| `GET /api/health` | — | Stav servera |
+| `GET /api/users` | — | Zoznam používateľov s preferenciami |
+| `GET /api/items` | — | Všetky položky znalostnej bázy |
+| `GET /api/recommend` | `user` | Content-based odporúčania zoradené podľa skóre |
+| `GET /api/explain` | `user`, `item` | Dôvody odporúčania konkrétnej položky |
+| `GET /api/hybrid` | `user` | Hybridné skóre (content + collab + adaptácia + univerzum) |
+| `GET /api/collaborative` | `user` | Podobní používatelia + ich odporúčania |
+| `GET /api/cross-domain` | `user`, `item` | Cross-domain odporúčania z danej položky |
+| `GET /api/fans` | `item` | Komu by sa páčila daná položka |
+| `GET /api/related` | `item` | Príbuzné položky podľa sily prepojenia |
+| `GET /api/path` | `from`, `to`, `max` | Cesta v grafe vzťahov |
+| `GET /api/movie-night` | `user`, `limit` | CLP(FD) výber filmov do časového limitu |
+| `GET /api/stats` | `user` | Štatistika odporúčaní podľa typov obsahu |
+
 ### Architektúra webu
 
-1. **`backend/` (Prolog API)**:
-    - Tenký obal `api.pl` nad `program.pl`.
-    - Vystavuje niekoľko HTTP endpointov napr. `/api/recommend`, `/api/movie-night`.
-    - Využíva štandardný `library(http/thread_httpd)` a beží na porte 4000.
+1. **`backend/api.pl` (Prolog HTTP API)**:
+    - Tenký obal nad `program.pl` — žiadna logika sa neduplikuje.
+    - Každý handler pozbiera riešenia cez `findall/setof` a pošle `reply_json_dict`.
+    - Využíva `library(http/thread_httpd)`, beží na porte 4000 (alebo `$PORT`).
 2. **`web/` (Next.js)**:
-    - Aplikácia v React/Next.js s Tailwind CSS.
-    - Všetka logika zostala zachovaná v Prologu — frontend robí cez route handlery len proxy dopytov a vizualizáciu.
-    - Zabraňuje duplicite kódu a dovoľuje použiť Prolog-špecifickejové funkcie ako je napr. CLP(FD).
+    - React/Next.js 15 (App Router) s Tailwind CSS a shadcn/ui komponentmi.
+    - Všetka logika zostala v Prologu — Next.js robí len proxy dopytov (route handlery) a vizualizáciu.
+    - Dynamický render (`force-dynamic`) — každý dopyt ide na živý Prolog engine.
 
-_Poznámka pre nasadenie: Aplikácia sa na Vercel nehodí (Vercel nepodporuje Docker/perzistentné servery). Pre verejné nasadenie ju odporúčame hostovať na platforme podporujúcej Docker kontajnery (Render, Fly.io, Railway)._
+_Poznámka pre nasadenie: Vercel nepodporuje Docker/perzistentné servery. Pre verejné nasadenie odporúčame platformy s podporou Docker kontajnerov (Render, Fly.io, Railway)._
 
 ```
 ==============================================
@@ -299,14 +339,14 @@ _Poznámka pre nasadenie: Aplikácia sa na Vercel nehodí (Vercel nepodporuje Do
 ## Kompilácia elaborátu (LaTeX)
 
 ```bash
-cd src
+cd docs
 pdflatex report.tex
 bibtex report
 pdflatex report.tex
 pdflatex report.tex
 ```
 
-Výstup: `src/report.pdf` (a kópia v koreni projektu).
+Výstup: `docs/report.pdf` (a kópia v koreni projektu).
 
 ---
 

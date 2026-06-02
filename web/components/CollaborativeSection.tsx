@@ -29,7 +29,7 @@ export function CollaborativeSection({ user }: { user: string }) {
       {/* Podobni pouzivatelia */}
       <div>
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-soft">
-          <Users className="h-4 w-4 text-accent" /> Podobní používatelia
+          <Users className="h-4 w-4 text-primary" /> Podobní používatelia
         </h3>
         <div className="space-y-3">
           {podobni.map((p) => (
@@ -56,7 +56,7 @@ export function CollaborativeSection({ user }: { user: string }) {
       {/* Co od nich odporucame */}
       <div>
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-soft">
-          <ArrowRight className="h-4 w-4 text-accent" /> Odporúčania od podobných používateľov
+          <ArrowRight className="h-4 w-4 text-primary" /> Odporúčania od podobných používateľov
         </h3>
         {odp.length === 0 ? (
           <p className="text-sm text-ink-faint">Žiadne ďalšie odporúčania.</p>

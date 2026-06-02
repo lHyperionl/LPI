@@ -2,9 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-inter: "Inter", system-ui, sans-serif;
-  --font-serif: "Georgia", serif;
+@layer base {
+  :root {
+    --background: 240 60% 99%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 214 32% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 214 32% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 226 100% 97%;
+    --accent-foreground: 243 75% 59%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --radius: 0.625rem;
+    --chart-1: 243 75% 59%;
+    --chart-2: 158 64% 52%;
+    --chart-3: 271 68% 56%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 12 76% 61%;
+    --font-inter: "Inter", system-ui, sans-serif;
+    --font-serif: "Georgia", serif;
+  }
 }
 
 html {
@@ -29,13 +56,30 @@ body {
   }
 }
 
-/* Jemna mriezkova textura pozadia hero sekcie. */
+/* Static grid — hero fallback */
 .bg-grid {
   background-image:
     linear-gradient(to right, rgba(79, 70, 229, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(79, 70, 229, 0.05) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 50%, transparent 100%);
+}
+
+/* Animated mesh gradient for hero */
+@keyframes mesh-shift {
+  0%   { background-position: 0% 0%, 0% 0%; }
+  33%  { background-position: 44px 0%, 0% 44px; }
+  66%  { background-position: 44px 44px%, 44px 0%; }
+  100% { background-position: 0% 0%, 0% 0%; }
+}
+
+.bg-grid-animated {
+  background-image:
+    linear-gradient(to right, rgba(79, 70, 229, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(79, 70, 229, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 50%, transparent 100%);
+  animation: mesh-shift 12s ease-in-out infinite;
 }
 
 /* Tenky scrollbar pre horizontalne zoznamy. */

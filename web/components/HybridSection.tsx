@@ -21,19 +21,19 @@ export function HybridSection({ user }: { user: string }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3">
               <p className="truncate font-semibold text-ink">{o.polozka.nazov}</p>
-              <span className="shrink-0 text-sm font-bold tabular-nums text-accent">
+              <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
                 {o.hybrid}
               </span>
             </div>
             {/* Bar: content (plne) + bonus (svetly) */}
             <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full bg-accent"
+                className="h-full bg-primary"
                 style={{ width: `${(o.content / max) * 100}%` }}
                 title={`Content skóre: ${o.content}`}
               />
               <div
-                className="h-full bg-accent/35"
+                className="h-full bg-primary/35"
                 style={{ width: `${(o.bonus / max) * 100}%` }}
                 title={`Hybridný bonus: +${o.bonus}`}
               />
@@ -47,7 +47,7 @@ export function HybridSection({ user }: { user: string }) {
           <span className="h-2 w-4 rounded-full bg-accent" /> content-based skóre
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-4 rounded-full bg-accent/35" /> collab / adaptácia / univerzum
+          <span className="h-2 w-4 rounded-full bg-primary/35" /> collab / adaptácia / univerzum
         </span>
       </div>
     </Card>

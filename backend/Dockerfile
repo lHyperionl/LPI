@@ -1,22 +1,27 @@
 # =============================================================
 # backend/Dockerfile  -  SWI-Prolog HTTP API
 # =============================================================
-# Build context = koren projektu (kvoli pristupu k program.pl).
-#   docker build -f backend/Dockerfile -t prolog-api .
+# Build context = backend/ (Railway service root + docker-compose).
+#   docker build -f Dockerfile -t prolog-api backend/
 # =============================================================
 FROM swipl:9.2.9
 
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -u 1001 -s /bin/sh prolog
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# program.pl je NEZMENENA znalostna baza + pravidla z korena projektu.
+# program.pl je NEZMENENA znalostna baza + pravidla.
 # api.pl je tenka HTTP vrstva nad nou.
 COPY program.pl /app/program.pl
-COPY backend/api.pl /app/api.pl
+COPY api.pl /app/api.pl
+
+RUN chown -R prolog:prolog /app
+
+USER prolog
 
 ENV PORT=4000
 EXPOSE 4000
 
-# thread_httpd drzi proces nazive; consult('program.pl') najde subor v /app.
+# thread_httpd drzi proces nazive.
 CMD ["swipl", "api.pl"]

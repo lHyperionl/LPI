@@ -21,7 +21,7 @@ export function StatsSection({ user }: { user: string }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Card className="flex flex-col justify-center p-5">
-        <span className="text-4xl font-bold tabular-nums text-accent">{data.spolu}</span>
+        <span className="text-4xl font-bold tabular-nums text-primary">{data.spolu}</span>
         <span className="mt-1 text-sm text-ink-faint">odporúčaní spolu</span>
       </Card>
       {cells.map((c) => {

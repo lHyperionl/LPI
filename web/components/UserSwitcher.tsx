@@ -4,6 +4,16 @@ import { Star, Clapperboard, Globe2, Building2, History } from "lucide-react";
 import type { Pouzivatel } from "@/lib/types";
 import { labelZaner, labelKrajina, labelTvorca, labelTypPlural, labelStudio } from "@/lib/labels";
 import { Card, Pill } from "./ui";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+function userHue(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 60%, 42%)`;
+}
 
 export function UserSwitcher({
   users,
@@ -22,26 +32,32 @@ export function UserSwitcher({
       <div className="flex flex-col gap-2">
         {users.map((u) => {
           const active = u.id === selected;
+          const initials = u.meno
+            .split(" ")
+            .map((s) => s[0])
+            .join("");
           return (
             <button
               key={u.id}
               onClick={() => onSelect(u.id)}
               className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
                 active
-                  ? "border-accent/30 bg-accent-wash shadow-card"
+                  ? "border-primary/30 bg-accent shadow-card"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <span
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
-                  active ? "bg-accent text-white" : "bg-slate-100 text-ink-soft"
-                }`}
-              >
-                {u.meno
-                  .split(" ")
-                  .map((s) => s[0])
-                  .join("")}
-              </span>
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarFallback
+                  className="text-sm font-semibold text-white"
+                  style={{
+                    backgroundColor: active
+                      ? "hsl(var(--primary))"
+                      : userHue(u.id),
+                  }}
+                >
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
               <span>
                 <span className="block text-sm font-semibold text-ink">{u.meno}</span>
                 <span className="block text-xs text-ink-faint">
@@ -128,7 +144,7 @@ function ProfilBlok({
   return (
     <div>
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-faint">
-        <span className="text-accent">{icon}</span>
+        <span className="text-primary">{icon}</span>
         {titul}
       </p>
       <div className="flex flex-wrap gap-1.5">{children}</div>

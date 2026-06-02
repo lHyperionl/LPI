@@ -4,8 +4,10 @@
 "use client";
 
 import { Film, BookOpen, Gamepad2, Tv, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import type { Typ } from "@/lib/types";
 import { kategoriaLabel, kategoriaTon, labelTyp } from "@/lib/labels";
+import { Badge } from "@/components/ui/badge";
 
 // --- Ikona + farba podla typu obsahu -------------------------
 const TYP_META: Record<Typ, { icon: LucideIcon; color: string; bg: string }> = {
@@ -35,12 +37,17 @@ export function typBg(typ: Typ): string {
   return (TYP_META[typ] ?? TYP_META.film).bg;
 }
 
-// --- Skore badge ---------------------------------------------
+// --- Skore badge (pulses on mount when data arrives) ---------
 export function ScoreBadge({ skore, suffix = "b" }: { skore: number; suffix?: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent-wash px-2.5 py-1 text-xs font-semibold tabular-nums text-accent">
+    <motion.span
+      initial={{ scale: 1 }}
+      animate={{ scale: [1, 1.06, 1] }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold tabular-nums text-accent-foreground"
+    >
       {skore} {suffix}
-    </span>
+    </motion.span>
   );
 }
 
@@ -70,7 +77,7 @@ export function Pill({
 }) {
   const cls =
     tone === "accent"
-      ? "bg-accent-wash text-accent ring-accent/15"
+      ? "bg-accent text-accent-foreground ring-primary/15"
       : "bg-slate-50 text-ink-soft ring-slate-200";
   return (
     <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ring-1 ${cls}`}>
@@ -90,10 +97,15 @@ export function SectionHeading({
   desc?: string;
 }) {
   return (
-    <div className="mb-8 max-w-2xl">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-        {eyebrow}
-      </p>
+    <div className="mb-8 max-w-2xl border-l-2 border-primary/20 pl-4">
+      <div className="mb-2">
+        <Badge
+          variant="outline"
+          className="border-primary/30 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary"
+        >
+          {eyebrow}
+        </Badge>
+      </div>
       <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h2>
       {desc ? <p className="mt-3 text-[15px] leading-relaxed text-ink-faint">{desc}</p> : null}
     </div>

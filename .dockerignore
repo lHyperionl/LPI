@@ -4,9 +4,7 @@ node_modules
 .github
 .vscode
 *.md
-src
-tests.pl
-examples.pl
+docs
 report.pdf
 *.log
 *.aux

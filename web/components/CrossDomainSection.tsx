@@ -48,7 +48,7 @@ export function CrossDomainSection({
         />
         {zdroj && (
           <span className="inline-flex items-center gap-1.5 text-sm text-ink-faint">
-            <Shuffle className="h-4 w-4 text-accent" /> hľadám naprieč ostatnými doménami
+            <Shuffle className="h-4 w-4 text-primary" /> hľadám naprieč ostatnými doménami
           </span>
         )}
       </div>
@@ -74,7 +74,7 @@ export function CrossDomainSection({
               {c.dovody.map((d, i) => (
                 <span
                   key={i}
-                  className="rounded-md bg-accent-wash px-2 py-0.5 text-[11px] font-medium text-accent"
+                  className="rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground"
                 >
                   {dovodVeta(d)}
                 </span>

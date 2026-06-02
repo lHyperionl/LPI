@@ -5,6 +5,7 @@ import { Clock, Trophy, Sigma } from "lucide-react";
 import type { MovieNightFilm } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { Card, ScoreBadge } from "./ui";
+import { Slider } from "@/components/ui/slider";
 
 export function MovieNightSection({ user }: { user: string }) {
   const [limit, setLimit] = useState<number>(300);
@@ -20,25 +21,23 @@ export function MovieNightSection({ user }: { user: string }) {
   return (
     <Card className="p-6">
       <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <label htmlFor="limit" className="flex items-center gap-2 text-sm font-medium text-ink-soft">
-            <Clock className="h-4 w-4 text-accent" /> Časový limit večera
+            <Clock className="h-4 w-4 text-primary" /> Časový limit večera
           </label>
-          <span className="rounded-lg bg-accent-wash px-3 py-1 text-sm font-bold tabular-nums text-accent">
+          <span className="rounded-lg bg-accent px-3 py-1 text-sm font-bold tabular-nums text-accent-foreground">
             {limit} min
           </span>
         </div>
-        <input
+        <Slider
           id="limit"
-          type="range"
           min={90}
           max={600}
           step={15}
-          value={limit}
-          onChange={(e) => setLimit(Number(e.target.value))}
-          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-accent"
+          value={[limit]}
+          onValueChange={([v]) => setLimit(v)}
         />
-        <div className="mt-1 flex justify-between text-xs text-ink-faint">
+        <div className="mt-2 flex justify-between text-xs text-ink-faint">
           <span>90 min</span>
           <span>600 min</span>
         </div>
@@ -100,7 +99,7 @@ function Metric({
 }) {
   return (
     <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-2.5">
-      <span className="text-accent">{icon}</span>
+      <span className="text-primary">{icon}</span>
       <span>
         <span className="block text-[11px] uppercase tracking-wide text-ink-faint">{label}</span>
         <span className="block text-sm font-bold text-ink">{children}</span>

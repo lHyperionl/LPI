@@ -94,7 +94,7 @@ export function RelationGraph({ items }: { items: Polozka[] }) {
                       x={x}
                       y={y + (Math.sin(angle) >= 0 ? 39 : -29)}
                       textAnchor="middle"
-                      className="fill-accent text-[10px] font-semibold"
+                      className="fill-primary text-[10px] font-semibold"
                     >
                       sila {p.sila}
                     </text>
@@ -130,7 +130,7 @@ export function RelationGraph({ items }: { items: Polozka[] }) {
               {pribuzne[hover].atributy.map((a, i) => (
                 <span
                   key={i}
-                  className="mr-1.5 inline-block rounded-md bg-accent-wash px-2 py-0.5 text-xs font-medium text-accent"
+                  className="mr-1.5 inline-block rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground"
                 >
                   {dovodVeta(a)}
                 </span>
