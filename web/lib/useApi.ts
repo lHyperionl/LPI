@@ -18,9 +18,10 @@ export function useApi<T>(
   useEffect(() => {
     if (!path || !key) return;
     let alive = true;
+    setData(null);
     setLoading(true);
     setError(null);
-    fetch(key, { headers: { Accept: "application/json" } })
+    fetch(key, { cache: "no-store", headers: { Accept: "application/json" } })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

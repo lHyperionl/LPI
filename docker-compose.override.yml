@@ -1,0 +1,26 @@
+# Automatically merged by Docker Compose for local development.
+# For production (Railway / CI), use: docker compose -f docker-compose.yml up
+services:
+    prolog-api:
+        build:
+            target: dev
+        volumes:
+            - ./backend:/app
+
+    web:
+        build:
+            target: dev
+        volumes:
+            - ./web:/app
+            # Anonymous volume keeps the container's node_modules intact
+            # so the bind-mount above doesn't wipe them out.
+            - /app/node_modules
+            - /app/.next
+        environment:
+            - NODE_ENV=development
+            # Required on Windows — Docker Desktop (WSL2) doesn't forward
+            # inotify events across the Windows/Linux boundary, so Next.js
+            # falls back to polling to detect file changes.
+            - WATCHPACK_POLLING=true
+            - NEXT_TELEMETRY_DISABLED=1
+            - PROLOG_API_URL=http://prolog-api:${PORT:-4000}

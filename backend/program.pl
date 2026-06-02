@@ -1152,7 +1152,7 @@ top_pribuzne(P, Top) :-
     findall(Sila-P2,
             pribuzne_polozky(P, P2, Sila),
             Pary),
-    sort(0, @>=, Pary, Top).
+    sort(0, @>, Pary, Top).
 
 %  retazec(+Od, ?Na, +MaxKrokov, -Cesta)
 %     Najde cestu v grafe pribuznosti dlzky <= MaxKrokov.
@@ -1197,7 +1197,7 @@ filmovy_vecer(P, MaxMinut, Vyber, CelkovaDlzka, CelkoveSkore) :-
     scalar_product(Skore, VybraneBity, #=, CelkoveSkore),
     CelkovaDlzka #=< MaxMinut,
     sum(VybraneBity, #>=, 1),
-    labeling([max(CelkoveSkore)], VybraneBity),
+    labeling([max(CelkoveSkore), down], VybraneBity),
     vybrane_filmy(Kandidati, VybraneBity, Vyber).
 
 kandidat_dlzky([], []).

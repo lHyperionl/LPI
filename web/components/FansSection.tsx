@@ -42,8 +42,8 @@ export function FansSection({ items }: { items: Polozka[] }) {
           </p>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {fanusikovia.map((f) => (
-              <li key={f.pouzivatel.id} className="flex items-start gap-3 px-5 py-4">
+            {fanusikovia.map((f, i) => (
+              <li key={`${f.pouzivatel.id}-${i}`} className="flex items-start gap-3 px-5 py-4">
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-500">
                   <Heart className="h-4 w-4" fill="currentColor" />
                 </span>

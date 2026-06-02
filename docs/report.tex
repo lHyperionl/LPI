@@ -55,11 +55,12 @@
 
 \title{
   \large Logické programovanie a inferencia (LPI) \\[0.4em]
-  \LARGE Odporúčací systém filmov, seriálov, kníh a videohier v jazyku Prolog \\[0.4em]
+  \LARGE Odporúčací systém filmov, seriálov, kníh a videohier v jazyku Prolog \\[0.2em]
+  \large s webovým playgroundom a HTTP API \\[0.4em]
   \large Téma 9: Program odporúčajúci filmy/knihy/technológie
 }
 \author{
-  Tím~--- Jozef Belušák, Ján Kapurík, Adam Peško, Robert Kardošš, Branislav Zurian, Dávid Tkáč \\
+  Tím~--- Jozef Belušák, Ján Kapurík, Adam Peško, Robert Kardoš, Branislav Zurian, Dávid Tkáč \\
   Technická univerzita v~Košiciach, Fakulta elektrotechniky a informatiky
 }
 \date{máj 2026}
@@ -70,18 +71,23 @@
 \begin{abstract}
 \noindent
 V~práci predstavujeme \emph{vysvetliteľný odporúčací systém}
-implementovaný v~jazyku SWI-Prolog. Na rozdiel od bežných
-filmových odporúčačov rozširujeme doménu na štyri prepojené
-typy obsahu --- \textbf{filmy, seriály, knihy a~videohry} --- a~staviame
-ich na spoločný dátový model. Vďaka tomu vie systém ponúknuť
-\textbf{cross-domain} odporúčania (\uv{páči sa mi film $\Rightarrow$
-možno sa mi bude páčiť hra rovnakého žánru}), \textbf{reverzné
-dopyty} (\uv{kto všetko by mal rád konkrétnu hru?}) i~tranzitívne
-  \textbf{cestovanie po grafe vzťahov} (žáner, krajina, štúdio,
-  tvorca) aj constraint výber filmového večera do časového limitu.
-  Hlavnou hodnotou je transparentnosť --- pre každé
-odporúčanie vie systém vygenerovať vysvetlenie zložené
-z~konkrétnych pravidiel.
+implementovaný v~jazyku SWI-Prolog. Systém odporúča štyri
+prepojené typy obsahu --- \textbf{filmy, seriály, knihy a~videohry}
+--- nad spoločným dátovým modelom \texttt{polozka/4}. Odporúčania
+vznikajú kombináciou content-based pravidiel, skórovania,
+collaborative filteringu, cross-domain odporúčania, grafu vzťahov
+medzi položkami a~constraint výberu filmového večera do časového
+limitu. Hlavnou hodnotou riešenia je transparentnosť: pre každé
+odporúčanie systém vie vygenerovať konkrétne dôvody zložené
+z~faktov a~pravidiel.
+
+Aktualizovaná verzia projektu obsahuje aj webový frontend
+v~Next.js a~tenkú HTTP JSON API vrstvu nad Prolog jadrom. Frontend
+slúži ako interaktívny playground: používateľ si vyberie profil,
+zobrazí odporúčania, hybridné skóre, podobných používateľov,
+cross-domain väzby, fanúšikov položky, graf vzťahov, filmový večer
+a~štatistiky. Nasadená verzia aplikácie je dostupná na adrese
+\url{https://prolog-recommendation-system.up.railway.app/}.
 \end{abstract}
 
 \section{Motivácia problému}
@@ -122,6 +128,12 @@ dopytov, ktoré klasický filmový odporúčač nevie:
   \item \emph{Vyber mi filmový večer do 300 minút} ---
         optimalizácia nad odporúčanými filmami cez CLP(FD).
 \end{itemize}
+
+Aktualizovaná verzia projektu už nie je iba konzolový Prolog program.
+Nad jadrom vznikla HTTP JSON API vrstva a~webový frontend, ktorý
+sprístupňuje rovnaké predikáty cez prehľadné používateľské rozhranie.
+Tým sa projekt mení z~demonštračnej znalostnej bázy na interaktívny
+playground vhodný aj na živú prezentáciu.
 
 \section{Aktuálny stav v~oblasti}
 
@@ -214,19 +226,39 @@ Systém má štyri logické vrstvy:
   \item \textbf{Znalostná báza} --- fakty o~55 položkách
         (15 filmov, 10 seriálov, 15 kníh, 15 hier) a~5~používateľoch
         (\texttt{backend/program.pl}, sekcia 1).
-  \item \textbf{Inferenčné pravidlá} --- pomocné, hlavné
-        odporúčanie, skórovanie, vysvetlenie, collaborative
-        filtering, cross-domain odporúčanie, filter
-        \emph{fanúšikovia}, graf pribuznosti a~constraint
-        odporúčanie (\texttt{backend/program.pl}, sekcie 2A--2G).
-  \item \textbf{HTTP API} --- tenká JSON vrstva \texttt{backend/api.pl}
-        nad \texttt{program.pl}; každý handler pozbiera riešenia
-        cez \texttt{findall/setof} a~pošle \texttt{reply\_json\_dict};
-        beží na porte 4000 cez \texttt{library(http/thread\_httpd)}.
+  \item \textbf{Inferenčné pravidlá} --- pomocné predikáty,
+        hlavné odporúčanie, skórovanie, vysvetľovanie,
+        collaborative filtering, cross-domain odporúčanie, filter
+        \emph{fanúšikovia}, graf príbuznosti, adaptácie,
+        univerzá, hybridné skóre a~constraint odporúčanie
+        (\texttt{backend/program.pl}, sekcie 2A--2G).
+  \item \textbf{HTTP API} --- tenká JSON vrstva
+        \texttt{backend/api.pl} nad \texttt{program.pl}; každý
+        handler pozbiera riešenia cez \texttt{findall/setof}
+        a~pošle \texttt{reply\_json\_dict}. API beží cez
+        \texttt{library(http/thread\_httpd)} a~štandardne počúva
+        na porte 4000 alebo na porte z~premennej prostredia
+        \texttt{PORT}.
   \item \textbf{Webová aplikácia} --- interaktívny playground
-        v~Next.js 15 (\texttt{web/}); všetka logika zostáva
-        v~Prologu, frontend robí len proxy dopytov a~vizualizáciu.
+        v~Next.js 15 (\texttt{web/}); všetka odporúčacia logika
+        zostáva v~Prologu, frontend robí výber používateľa,
+        volania endpointov, vizualizáciu výsledkov a~demo
+        rozhranie. Nasadená verzia je dostupná na
+        \url{https://prolog-recommendation-system.up.railway.app/}.
 \end{enumerate}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Vrstva} & \textbf{Technológia} & \textbf{Zodpovednosť}\\
+\midrule
+Frontend & Next.js 15, React 19, Tailwind CSS & UI, karty, graf, interakcie\\
+API & SWI-Prolog HTTP knižnice & JSON endpointy nad predikátmi\\
+Jadro & SWI-Prolog + CLP(FD) & znalostná báza a inferencia\\
+Nasadenie & Docker, Railway & spustenie backendu a frontendu\\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \subsection{Unifikovaný dátový model \texttt{polozka/4}}
 \label{sec:dm}
@@ -481,35 +513,81 @@ vie riešiť aj kombinatorické úlohy s~tvrdými obmedzeniami.
 \label{sec:web}
 
 Ako doplnok k~príkazovému riadku sme implementovali interaktívny
-webový \emph{playground}. Architektúra sa skladá z~dvoch kontajnerov
-riadených Docker Compose:
+webový \emph{playground}. Vďaka nemu nie je potrebné ručne písať
+Prolog dopyty v~termináli: používateľ si vyberie profil a~jednotlivé
+sekcie aplikácie volajú Prolog backend cez JSON endpointy.
 
 \paragraph{Backend (\texttt{backend/api.pl})} je tenká HTTP JSON
-vrstva nad nezmeneným \texttt{program.pl}. Používa štandardnú
-knižnicu \texttt{library(http/thread\_httpd)} a~vystavuje 13
-endpointov --- napr.\ \texttt{/api/recommend}, \texttt{/api/hybrid},
-\texttt{/api/cross-domain} či \texttt{/api/movie-night}.
-Každý handler žiadnu logiku neduplikuje: iba pozbiera riešenia
-cez \texttt{findall/setof} a~prevedie Prolog termy na JSON
-pomocou \texttt{reply\_json\_dict}. Dôvody odporúčaní
-(štruktúrované Prolog termy) prevádza predikát
-\texttt{dovod\_json/2} na JSON objekty so štandardizovaným
-poľom \texttt{druh}.
+vrstva nad nezmeneným \texttt{program.pl}. Používa štandardné
+knižnice SWI-Prologu \texttt{library(http/thread\_httpd)},
+\texttt{library(http/http\_dispatch)}, \texttt{library(http/http\_json)}
+a~\texttt{library(http/http\_cors)}. API vystavuje 13 endpointov:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Endpoint} & \textbf{Úloha}\\
+\midrule
+\texttt{/api/health} & kontrola dostupnosti backendu\\
+\texttt{/api/users} & zoznam používateľov a ich profilov\\
+\texttt{/api/items} & zoznam položiek zo znalostnej bázy\\
+\texttt{/api/recommend} & content-based odporúčania\\
+\texttt{/api/explain} & dôvody odporúčania konkrétnej položky\\
+\texttt{/api/hybrid} & hybridné skóre\\
+\texttt{/api/collaborative} & podobní používatelia a ich odporúčania\\
+\texttt{/api/cross-domain} & odporúčanie medzi rôznymi typmi obsahu\\
+\texttt{/api/fans} & reverzný filter fanúšikov položky\\
+\texttt{/api/related} & príbuzné položky v grafe\\
+\texttt{/api/path} & cesta medzi položkami v grafe vzťahov\\
+\texttt{/api/movie-night} & výber filmového večera do limitu\\
+\texttt{/api/stats} & štatistiky znalostnej bázy\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Každý handler žiadnu odporúčaciu logiku neduplikuje. Iba pripraví
+parametre, zavolá príslušný predikát z~\texttt{program.pl}, pozbiera
+riešenia cez \texttt{findall} alebo \texttt{setof} a~prevedie výsledok
+na JSON pomocou \texttt{reply\_json\_dict}. Štruktúrované dôvody
+odporúčania sa prevádzajú na JSON objekty, aby ich frontend vedel
+zobraziť ako čitateľné vysvetlenia.
 
 \paragraph{Frontend (\texttt{web/})} je aplikácia v~Next.js~15
-(App Router) s~Tailwind CSS. Stránka je renderovaná dynamicky
-(\texttt{force-dynamic}) --- každý dopyt ide na živý Prolog engine.
-Playground obsahuje deväť interaktívnych sekcií:
-content-based odporúčania s~vysvetleniami, hybridné skóre,
-collaborative filtering, cross-domain odporúčania, reverzný
-filter fanúšikov, graf vzťahov, constraint filmový večer
-a~štatistiky.
+(App Router), React~19 a~Tailwind CSS. Stránka je renderovaná
+dynamicky (\texttt{force-dynamic}), aby sa údaje vždy čítali zo
+živého Prolog backendu. Súčasťou rozhrania sú komponenty:
 
-Celý systém sa spustí jedným príkazom:
+\begin{itemize}[noitemsep]
+  \item \texttt{UserSwitcher} --- výber používateľského profilu,
+  \item \texttt{RecommendSection} --- content-based odporúčania so skóre,
+  \item \texttt{HybridSection} --- hybridné skóre,
+  \item \texttt{CollaborativeSection} --- podobní používatelia,
+  \item \texttt{CrossDomainSection} --- odporúčanie medzi doménami,
+  \item \texttt{FansSection} --- fanúšikovia konkrétnej položky,
+  \item \texttt{RelationGraph} --- vizualizácia vzťahov medzi položkami,
+  \item \texttt{MovieNightSection} --- constraint výber filmového večera,
+  \item \texttt{StatsSection} --- štatistiky znalostnej bázy.
+\end{itemize}
+
+Aplikácia je dostupná lokálne cez Docker Compose:
+
 \begin{lstlisting}[language=bash, numbers=none]
 docker compose up --build
 \end{lstlisting}
-a~je dostupný na \texttt{http://localhost:3000}.
+
+\noindent
+Frontend beží lokálne na \texttt{http://localhost:3000}, backend na
+\texttt{http://localhost:4000}. Verejne nasadená verzia playgroundu je
+dostupná na adrese:
+
+\begin{center}
+\url{https://prolog-recommendation-system.up.railway.app/}
+\end{center}
+
+\noindent
+Webová vrstva tak robí z~Prolog programu použiteľné demo: ukazuje
+profily používateľov, odporúčania, vysvetlenia, hybridné skóre,
+cross-domain väzby, graf aj optimalizačný výber filmového večera.
 
 \section{Ukážky použitia}
 
@@ -698,39 +776,97 @@ hodnotení.
 \section{Rozdelenie práce v~tíme}
 
 \begin{center}
-\begin{tabular}{>{\bfseries}lp{6cm}l}
+\begin{tabular}{>{\bfseries}p{3.4cm}p{8.1cm}p{3.2cm}}
 \toprule
-Člen & Zodpovednosť & Súbory\\
+Člen & Zodpovednosť & Súbory / časti\\
 \midrule
-Člen 1 & Dátový model \texttt{polozka/4}, znalostná báza
-         (55~položiek, 5~používateľov) &
-         \texttt{backend/program.pl} (§1)\\
-Člen 2 & Hlavné inferenčné pravidlo \texttt{odporucam/2},
-         predikáty \texttt{vyhovuje\_*}, polymorfný filter
-         rozmerov & \texttt{backend/program.pl} (§2.A--B)\\
-Člen 3 & Pokročilá inferencia: skórovanie, top, vysvetlenie,
-         collaborative, \textbf{cross-domain},
-         \textbf{fanúšikovia}, \textbf{graf vzťahov},
-         \textbf{adaptácie / univerzá}, \textbf{hybridné skóre},
-         \textbf{constraint odporúčanie} &
-         \texttt{backend/program.pl} (§2.C--G)\\
-Člen 4 & Demonštračné príklady (10~scenárov), PlUnit regresné
-         testy, \textbf{HTTP API} (\texttt{api.pl}),
-         \textbf{webová aplikácia} (Next.js) &
-         \texttt{backend/examples.pl}, \texttt{backend/tests.pl},
-         \texttt{backend/api.pl}, \texttt{web/},
-         \texttt{README.md}\\
-Člen 5 & Elaborát, prezentácia, koordinácia tímu,
-         Docker Compose a~nasadenie &
-         \texttt{docs/report.tex},
-         \texttt{docker-compose.yml}\\
+Jozef Belušák &
+Hlavná logika odporúčania, štruktúra systému a~prezentácia.
+Zodpovedal za návrh jadra odporúčania, prepojenie pravidiel
+a~vysvetlenie hlavného inferenčného toku. &
+\texttt{backend/program.pl}, prezentácia\\
+
+Ján Kapurík &
+Databáza položiek, žánre a~atribúty obsahu. Pripravil znalostnú
+bázu položiek naprieč filmami, knihami, hrami a~seriálmi. &
+\texttt{backend/program.pl} (§1)\\
+
+Adam Peško &
+Používatelia, preferencie, limity a~história konzumácie. Riešil
+profily používateľov a~filtre, ktoré rozhodujú, čo sa používateľovi
+môže odporučiť. &
+\texttt{backend/program.pl} (§1, §2.A)\\
+
+Robert Kardoš &
+Skórovanie, top odporúčania a~hybridné skóre. Pripravil mechanizmus,
+ktorý z~vhodných položiek skladá zoradený rebríček odporúčaní. &
+\texttt{backend/program.pl} (§2.B, §2.G)\\
+
+Branislav Zurian &
+Podobní používatelia, cross-domain odporúčanie a~graf vzťahov.
+Riešil prepojenia medzi používateľmi a~položkami naprieč doménami. &
+\texttt{backend/program.pl} (§2.C--F)\\
+
+Dávid Tkáč &
+Frontend, API napojenie, demo a~testovanie. Zodpovedal za webový
+playground, JSON komunikáciu s~Prolog backendom, demonštračné
+spustenie a~testovacie scenáre. &
+\texttt{backend/api.pl}, \texttt{web/}, \texttt{tests.pl}\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Práca prebiehala v~týždenných iteráciách s~krížovou revíziou kódu.
+Práca prebiehala v~iteráciách s~krížovou kontrolou častí. Cieľom
+bolo, aby každá časť systému zostala samostatne vysvetliteľná:
+dáta, používateľské profily, hlavné pravidlá, skórovanie,
+cross-domain logika aj webové rozhranie.
 
-\bibliographystyle{plain}
-\bibliography{bibliography}
+\begin{thebibliography}{9}
+
+\bibitem{sterling1994}
+Leon Sterling and Ehud Shapiro.
+\textit{The Art of Prolog: Advanced Programming Techniques}.
+MIT Press, 2nd edition, 1994.
+
+\bibitem{bratko2011}
+Ivan Bratko.
+\textit{Prolog Programming for Artificial Intelligence}.
+Addison-Wesley, 4th edition, 2011.
+
+\bibitem{burke2000}
+Robin Burke.
+Knowledge-Based Recommender Systems.
+In \textit{Encyclopedia of Library and Information Systems}, volume 69.
+Marcel Dekker, 2000.
+
+\bibitem{felfernig2008}
+Alexander Felfernig and Robin Burke.
+Constraint-Based Recommender Systems: Technologies and Research Issues.
+In \textit{Proceedings of ICEC '08}, ACM, 2008.
+
+\bibitem{lloyd1987}
+John W. Lloyd.
+\textit{Foundations of Logic Programming}.
+Springer, 2nd edition, 1987.
+
+\bibitem{aggarwal2016}
+Charu C. Aggarwal.
+\textit{Recommender Systems: The Textbook}.
+Springer, 2016.
+
+\bibitem{swiprolog}
+Jan Wielemaker et al.
+\textit{SWI-Prolog Reference Manual}.
+SWI-Prolog Consortium, 2024.
+\url{https://www.swi-prolog.org/pldoc/}
+
+\bibitem{lpi-tuke}
+KKUI FEI TUKE.
+\textit{Logické programovanie a inferencia (LPI) -- materiály kurzu}.
+2026.
+\url{https://kurzy.kpi.fei.tuke.sk/lpi/}
+
+\end{thebibliography}
+
 
 \end{document}

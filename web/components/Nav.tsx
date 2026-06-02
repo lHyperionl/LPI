@@ -8,26 +8,51 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { href: "#pouzivatel", label: "Profil", num: "01" },
   { href: "#odporucania", label: "Odporúčania", num: "02" },
+  { href: "#hybrid", label: "Hybridné", num: "03" },
   { href: "#collaborative", label: "Collaborative", num: "04" },
   { href: "#cross-domain", label: "Cross-domain", num: "05" },
+  { href: "#fanusikovia", label: "Fanúšikovia", num: "06" },
   { href: "#graf", label: "Graf", num: "07" },
   { href: "#filmovy-vecer", label: "Filmový večer", num: "08" },
+  { href: "#statistiky", label: "Štatistiky", num: "09" },
 ];
+
+const SECTION_IDS = LINKS.map((l) => l.href.slice(1));
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 16);
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0);
+
+      // Find the section closest to the top of the viewport
+      let current = "";
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 96) {
+          current = id;
+        }
+      }
+      setActiveId(current);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const id = href.slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <header
@@ -51,32 +76,37 @@ export function Nav() {
         </a>
 
         {/* Desktop links */}
-        <ul className="hidden items-center gap-6 md:flex">
-          {LINKS.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                className="flex items-center gap-1.5 text-sm font-medium text-ink-faint transition hover:text-ink"
-              >
-                <span className="text-[10px] font-bold tabular-nums text-primary/50">{l.num}</span>
-                {l.label}
-              </a>
-            </li>
-          ))}
+        <ul className="hidden items-center gap-4 lg:flex">
+          {LINKS.map((l) => {
+            const isActive = activeId === l.href.slice(1);
+            return (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  onClick={(e) => scrollTo(e, l.href)}
+                  className={`flex items-center gap-1 whitespace-nowrap text-xs font-medium transition hover:text-ink ${
+                    isActive ? "text-ink" : "text-ink-faint"
+                  }`}
+                >
+                  <span
+                    className={`text-[9px] font-bold tabular-nums transition ${
+                      isActive ? "text-primary" : "text-primary/50"
+                    }`}
+                  >
+                    {l.num}
+                  </span>
+                  {l.label}
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="flex items-center gap-2">
-          <a
-            href="#odporucania"
-            className="hidden rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 sm:block"
-          >
-            Spustiť demo
-          </a>
-
           {/* Mobile hamburger */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Otvoriť menu">
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Otvoriť menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -91,28 +121,28 @@ export function Nav() {
               </div>
               <nav className="p-4">
                 <ul className="space-y-1">
-                  {LINKS.map((l) => (
+                  {LINKS.map((l) => {
+                    const isActive = activeId === l.href.slice(1);
+                    return (
                     <li key={l.href}>
                       <a
                         href={l.href}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition hover:bg-slate-50 hover:text-ink"
+                        onClick={(e) => scrollTo(e, l.href)}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition hover:bg-slate-50 hover:text-ink ${
+                          isActive ? "bg-accent text-ink" : "text-ink-soft"
+                        }`}
                       >
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent text-[10px] font-bold text-primary">
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-primary transition ${
+                          isActive ? "bg-primary/10" : "bg-accent"
+                        }`}>
                           {l.num}
                         </span>
                         {l.label}
                       </a>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <a
-                    href="#odporucania"
-                    className="block rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-                  >
-                    Spustiť demo
-                  </a>
-                </div>
               </nav>
             </SheetContent>
           </Sheet>

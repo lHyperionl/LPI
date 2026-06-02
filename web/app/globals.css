@@ -10,21 +10,21 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 243 75% 59%;
+    --primary: 173 80% 40%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 214 32% 94%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 214 32% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 226 100% 97%;
-    --accent-foreground: 243 75% 59%;
+    --secondary: 170 30% 94%;
+    --secondary-foreground: 174 47% 11%;
+    --muted: 170 30% 96%;
+    --muted-foreground: 175 16% 47%;
+    --accent: 170 100% 96%;
+    --accent-foreground: 173 80% 40%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 243 75% 59%;
+    --border: 170 30% 89%;
+    --input: 170 30% 89%;
+    --ring: 173 80% 40%;
     --radius: 0.625rem;
-    --chart-1: 243 75% 59%;
+    --chart-1: 173 80% 40%;
     --chart-2: 158 64% 52%;
     --chart-3: 271 68% 56%;
     --chart-4: 38 92% 50%;
@@ -40,8 +40,9 @@ html {
 }
 
 body {
-  @apply bg-paper text-ink antialiased;
+  @apply text-ink antialiased;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  background-color: #f0fdfc;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -59,8 +60,8 @@ body {
 /* Static grid — hero fallback */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(79, 70, 229, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(79, 70, 229, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(20, 184, 166, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 184, 166, 0.05) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 50%, transparent 100%);
 }
@@ -75,8 +76,8 @@ body {
 
 .bg-grid-animated {
   background-image:
-    linear-gradient(to right, rgba(79, 70, 229, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(79, 70, 229, 0.06) 1px, transparent 1px);
+    linear-gradient(to right, rgba(20, 184, 166, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 184, 166, 0.06) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 50%, transparent 100%);
   animation: mesh-shift 12s ease-in-out infinite;

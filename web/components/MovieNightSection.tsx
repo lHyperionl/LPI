@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, Trophy, Sigma } from "lucide-react";
 import type { MovieNightFilm } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
@@ -9,12 +9,19 @@ import { Slider } from "@/components/ui/slider";
 
 export function MovieNightSection({ user }: { user: string }) {
   const [limit, setLimit] = useState<number>(300);
+  const [debouncedLimit, setDebouncedLimit] = useState<number>(300);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedLimit(limit), 300);
+    return () => clearTimeout(t);
+  }, [limit]);
+
   const { data, loading } = useApi<{
     najdene: boolean;
     celkova_dlzka?: number;
     celkove_skore?: number;
     filmy: MovieNightFilm[];
-  }>("/api/movie-night", { user, limit });
+  }>("/api/movie-night", { user, limit: debouncedLimit });
 
   const filmy = data?.filmy ?? [];
 

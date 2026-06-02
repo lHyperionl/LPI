@@ -14,7 +14,7 @@ export function StatsSection({ user }: { user: string }) {
   const cells = [
     { label: "Filmy", value: data.filmy, icon: Film, color: "text-sky-600 bg-sky-50" },
     { label: "Knihy", value: data.knihy, icon: BookOpen, color: "text-emerald-600 bg-emerald-50" },
-    { label: "Hry", value: data.hry, icon: Gamepad2, color: "text-violet-600 bg-violet-50" },
+    { label: "Hry", value: data.hry, icon: Gamepad2, color: "text-teal-600 bg-teal-50" },
     { label: "Seriály", value: data.serialy, icon: Tv, color: "text-amber-600 bg-amber-50" },
   ];
 

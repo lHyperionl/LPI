@@ -189,7 +189,7 @@ dovod_json(Atom, _{druh: Atom}) :-
     atom(Atom).
 
 dovody_json(List, JsonList) :-
-    maplist(dovod_json, List, JsonList).
+    maplist([D, J]>>(once(dovod_json(D, J))), List, JsonList).
 
 
 % =============================================================

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 const TYP_META: Record<Typ, { icon: LucideIcon; color: string; bg: string }> = {
   film: { icon: Film, color: "text-sky-600", bg: "bg-sky-50" },
   kniha: { icon: BookOpen, color: "text-emerald-600", bg: "bg-emerald-50" },
-  hra: { icon: Gamepad2, color: "text-violet-600", bg: "bg-violet-50" },
+  hra: { icon: Gamepad2, color: "text-teal-600", bg: "bg-teal-50" },
   serial: { icon: Tv, color: "text-amber-600", bg: "bg-amber-50" },
 };
 

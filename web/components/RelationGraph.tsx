@@ -53,7 +53,7 @@ export function RelationGraph({ items }: { items: Polozka[] }) {
                 const active = hover === null || hover === i;
                 return (
                   <line
-                    key={`e-${p.polozka.id}`}
+                    key={`e-${i}-${p.polozka.id}`}
                     x1={cx}
                     y1={cy}
                     x2={x}
@@ -73,7 +73,7 @@ export function RelationGraph({ items }: { items: Polozka[] }) {
                 const active = hover === null || hover === i;
                 return (
                   <g
-                    key={p.polozka.id}
+                    key={`${i}-${p.polozka.id}`}
                     onMouseEnter={() => setHover(i)}
                     onMouseLeave={() => setHover(null)}
                     opacity={active ? 1 : 0.35}

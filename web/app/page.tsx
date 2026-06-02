@@ -4,6 +4,7 @@ import { Nav } from "@/components/Nav";
 import { Playground } from "@/components/Playground";
 import { HeroStatsGroup } from "@/components/HeroStats";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { SmoothLink } from "@/components/SmoothLink";
 
 // Vzdy dynamicky render - data citame zo ziveho Prolog backendu.
 export const dynamic = "force-dynamic";
@@ -27,6 +28,13 @@ export default async function Home() {
 
     return (
         <main id="top">
+            {/* Fixed aurora background — blobs scroll behind the whole page */}
+            <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
+                <div className="absolute -right-48 -top-48 h-[650px] w-[650px] rounded-full bg-teal-400/15 blur-[100px]" />
+                <div className="absolute -bottom-40 -left-40 h-[550px] w-[550px] rounded-full bg-cyan-500/10 blur-[90px]" />
+                <div className="absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-300/[0.06] blur-[80px]" />
+            </div>
+
             <Nav />
 
             {/* HERO */}
@@ -50,18 +58,18 @@ export default async function Home() {
                             znalostnou bázou.
                         </p>
                         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-                            <a
+                            <SmoothLink
                                 href="#odporucania"
                                 className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-card transition hover:bg-primary/90"
                             >
                                 Vyskúšaj playground
-                            </a>
-                            <a
+                            </SmoothLink>
+                            <SmoothLink
                                 href="#graf"
                                 className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-ink-soft transition hover:border-slate-400"
                             >
                                 Pozri graf vzťahov
-                            </a>
+                            </SmoothLink>
                         </div>
 
                         {/* Statisticke cisla znalostnej bazy — animated on viewport entry */}
@@ -104,23 +112,26 @@ export default async function Home() {
                     aria-hidden
                 />
                 <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-                    <div className="flex flex-col items-center justify-between gap-4 text-sm text-ink-faint sm:flex-row">
-                        <p>
-                            Tímový projekt{" "}
-                            <strong className="text-ink-soft">LPI</strong> ·
-                            TUKE — odporúčací systém v Prologu.
-                        </p>
-                        <p className="flex items-center gap-1.5">
-                            Beží na{" "}
-                            <span className="font-semibold text-ink-soft">
-                                SWI-Prolog
-                            </span>{" "}
-                            +{" "}
-                            <span className="font-semibold text-ink-soft">
-                                Next.js
-                            </span>
-                        </p>
-                    </div>
+                    <p className="mb-6 text-center text-sm text-ink-faint">
+                        Tímový projekt{" "}
+                        <strong className="text-ink-soft">LPI</strong> ·
+                        TUKE — odporúčací systém v Prologu.
+                    </p>
+                    <ul className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm text-ink-faint sm:grid-cols-2 lg:grid-cols-3">
+                        {[
+                            { meno: "Jozef Belušák", popis: "Hlavná logika odporúčania, štruktúra systému a prezentácia" },
+                            { meno: "Ján Kapurík", popis: "Databáza položiek, žánre a atribúty obsahu" },
+                            { meno: "Adam Peško", popis: "Používatelia, preferencie, limity a história konzumácie" },
+                            { meno: "Robert Kardoš", popis: "Skórovanie, top odporúčania a hybridné skóre" },
+                            { meno: "Branislav Zurian", popis: "Podobní používatelia, cross-domain odporúčanie a graf vzťahov" },
+                            { meno: "Dávid Tkáč", popis: "Frontend, API napojenie, demo a testovanie" },
+                        ].map(({ meno, popis }) => (
+                            <li key={meno} className="flex gap-2">
+                                <span className="font-semibold text-ink-soft whitespace-nowrap">{meno}</span>
+                                <span className="text-ink-faint">– {popis}</span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </footer>
 

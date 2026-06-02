@@ -92,7 +92,7 @@ export function UserSwitcher({
               ))}
             </ProfilBlok>
 
-            <ProfilBlok icon={<Clapperboard className="h-4 w-4" />} titul="Konzumuje">
+            <ProfilBlok icon={<Clapperboard className="h-4 w-4" />} titul="Obľúbené médiá">
               {profil.oblubene_typy.map((t) => (
                 <Pill key={t}>{labelTypPlural(t)}</Pill>
               ))}
@@ -120,7 +120,7 @@ export function UserSwitcher({
               </ProfilBlok>
             )}
 
-            <ProfilBlok icon={<History className="h-4 w-4" />} titul="Už konzumoval">
+            <ProfilBlok icon={<History className="h-4 w-4" />} titul="Videl / hral / čítal">
               {profil.uz_konzumoval.map((p) => (
                 <Pill key={p.id}>{p.nazov}</Pill>
               ))}
