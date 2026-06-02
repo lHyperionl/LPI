@@ -19,7 +19,7 @@ import type {
   Vysvetlenie,
 } from "./types";
 
-const BASE = process.env.PROLOG_API_URL ?? "http://localhost:4000";
+const BASE = process.env.PROLOG_API_URL || "http://localhost:4000";
 
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
   const url = new URL(path, BASE);
