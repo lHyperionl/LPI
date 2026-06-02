@@ -976,6 +976,44 @@ kategoria_odporucania(P, F, 'Dobra zhoda') :-
 kategoria_odporucania(_, _, 'Slaba zhoda').
 
 
+% --- 2.B.4 VLASTNY PROFIL (ad-hoc odporucania bez fixneho pouzivatela) ---
+%
+%  odporucam_vlastny(+Polozka, +Zanre, +Typy, +MinH)
+%     Odporuca polozku ak jej typ je v Typy, hodnotenie >= MinH
+%     a aspon jeden jej zaner je v Zanre.
+%
+%  skore_vlastny(+Polozka, +Zanre, +Tvorcovia, +Krajiny, +Studia, -Skore)
+%     Skore = hodnotenie + zaner_bonus(2) + tvorca_bonus(3)
+%             + krajina_bonus(1) + studio_bonus(1)
+%
+%  top_vlastne_odporucania(+Zanre, +Typy, +MinH, +Tvorcovia, +Krajiny,
+%                           +Studia, -Zoradene)
+%     Vrati zoznam Skore-Polozka zostupne usporiadany.
+
+odporucam_vlastny(Polozka, Zanre, Typy, MinH, Konzumovane) :-
+    polozka(Polozka, Typ, _, _),
+    member(Typ, Typy),
+    hodnotenie(Polozka, H),
+    H >= MinH,
+    once((zaner(Polozka, Z), member(Z, Zanre))),
+    \+ member(Polozka, Konzumovane).
+
+skore_vlastny(Polozka, Zanre, Tvorcovia, Krajiny, Studia, Skore) :-
+    hodnotenie(Polozka, H),
+    ( (zaner(Polozka, Z), member(Z, Zanre))        -> BZ = 2 ; BZ = 0 ),
+    ( (tvorca(Polozka, _, T), member(T, Tvorcovia)) -> BT = 3 ; BT = 0 ),
+    ( (krajina(Polozka, K), member(K, Krajiny))     -> BK = 1 ; BK = 0 ),
+    ( (studio(Polozka, S), member(S, Studia))       -> BS = 1 ; BS = 0 ),
+    Skore is H + BZ + BT + BK + BS.
+
+top_vlastne_odporucania(Zanre, Typy, MinH, Tvorcovia, Krajiny, Studia, Konzumovane, Zoradene) :-
+    findall(Skore-Polozka,
+            ( odporucam_vlastny(Polozka, Zanre, Typy, MinH, Konzumovane),
+              skore_vlastny(Polozka, Zanre, Tvorcovia, Krajiny, Studia, Skore) ),
+            Pary),
+    sort(0, @>=, Pary, Zoradene).
+
+
 % --- 2.C COLLABORATIVE FILTERING -----------------------------
 %
 % Podobnost pouzivatelov je skore nad spolocnymi preferenciami.

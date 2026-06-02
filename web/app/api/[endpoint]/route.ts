@@ -31,6 +31,7 @@ const ALLOWED = new Set([
   "movie-night",
   "stats",
   "health",
+  "custom-recommend",
 ]);
 
 export const dynamic = "force-dynamic";

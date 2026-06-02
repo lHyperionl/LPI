@@ -55,6 +55,7 @@
 :- http_handler(root(api/path),          handle_path,         []).
 :- http_handler('/api/movie-night',      handle_movie_night,  []).
 :- http_handler(root(api/stats),         handle_stats,        []).
+:- http_handler('/api/custom-recommend', handle_custom_recommend, []).
 
 
 % =============================================================
@@ -376,6 +377,45 @@ handle_movie_night(Request) :-
                             najdene: false, filmy: [] })
        )
     ;  reply(Request, _{ error: "neznamy pouzivatel", pouzivatel: User })
+    ).
+
+
+% --- /api/custom-recommend?genres=sci_fi,akcia&types=film,serial&min_rating=7 ---
+handle_custom_recommend(Request) :-
+    ( param_atom(Request, genres, GenresAtom)
+    ->  atomic_list_concat(Zanre, ',', GenresAtom)
+    ;   Zanre = []
+    ),
+    ( Zanre = []
+    ->  reply(Request, _{ error: "Vyber aspon jeden zaner", odporucania: [] })
+    ;
+        ( param_atom(Request, types, TypesAtom)
+        ->  atomic_list_concat(Typy, ',', TypesAtom)
+        ;   Typy = [film, kniha, hra, serial]
+        ),
+        param_number(Request, min_rating, 1, MinH),
+        ( param_atom(Request, creators, CreatorsAtom)
+        ->  atomic_list_concat(Tvorcovia, ',', CreatorsAtom)
+        ;   Tvorcovia = []
+        ),
+        ( param_atom(Request, countries, CountriesAtom)
+        ->  atomic_list_concat(Krajiny, ',', CountriesAtom)
+        ;   Krajiny = []
+        ),
+        ( param_atom(Request, studios, StudiosAtom)
+        ->  atomic_list_concat(Studia, ',', StudiosAtom)
+        ;   Studia = []
+        ),
+        ( param_atom(Request, consumed, ConsumedAtom)
+        ->  atomic_list_concat(Konzumovane, ',', ConsumedAtom)
+        ;   Konzumovane = []
+        ),
+        top_vlastne_odporucania(Zanre, Typy, MinH, Tvorcovia, Krajiny, Studia, Konzumovane, Zoradene),
+        findall(_{ polozka: PD, skore: Skore },
+                ( member(Skore-Id, Zoradene),
+                  polozka_dict(Id, PD) ),
+                Odp),
+        reply(Request, _{ odporucania: Odp })
     ).
 
 

@@ -1,10 +1,12 @@
 "use client";
 
-import { Star, Clapperboard, Globe2, Building2, History } from "lucide-react";
-import type { Pouzivatel } from "@/lib/types";
+import { useState } from "react";
+import { Star, Clapperboard, Globe2, Building2, History, SlidersHorizontal } from "lucide-react";
+import type { Pouzivatel, Polozka } from "@/lib/types";
 import { labelZaner, labelKrajina, labelTvorca, labelTypPlural, labelStudio } from "@/lib/labels";
 import { Card, Pill } from "./ui";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CustomProfilePanel } from "./CustomProfilePanel";
 
 function userHue(id: string): string {
   let hash = 0;
@@ -17,13 +19,16 @@ function userHue(id: string): string {
 
 export function UserSwitcher({
   users,
+  items,
   selected,
   onSelect,
 }: {
   users: Pouzivatel[];
+  items: Polozka[];
   selected: string;
   onSelect: (id: string) => void;
 }) {
+  const [customMode, setCustomMode] = useState(false);
   const profil = users.find((u) => u.id === selected);
 
   return (
@@ -31,7 +36,7 @@ export function UserSwitcher({
       {/* Prepinac pouzivatelov */}
       <div className="flex flex-col gap-2">
         {users.map((u) => {
-          const active = u.id === selected;
+          const active = !customMode && u.id === selected;
           const initials = u.meno
             .split(" ")
             .map((s) => s[0])
@@ -39,7 +44,7 @@ export function UserSwitcher({
           return (
             <button
               key={u.id}
-              onClick={() => onSelect(u.id)}
+              onClick={() => { setCustomMode(false); onSelect(u.id); }}
               className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
                 active
                   ? "border-primary/30 bg-accent shadow-card"
@@ -67,10 +72,30 @@ export function UserSwitcher({
             </button>
           );
         })}
+
+        {/* Vlastny profil */}
+        <button
+          onClick={() => setCustomMode(true)}
+          className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+            customMode
+              ? "border-primary/30 bg-accent shadow-card"
+              : "border-dashed border-slate-300 bg-white hover:border-primary/40 hover:bg-slate-50"
+          }`}
+        >
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <SlidersHorizontal className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-ink">Vlastný profil</span>
+            <span className="block text-xs text-ink-faint">Vyber žánre a získaj odporúčania</span>
+          </span>
+        </button>
       </div>
 
-      {/* Profil vybraneho pouzivatela */}
-      {profil ? (
+      {/* Obsah pravej strany */}
+      {customMode ? (
+        <CustomProfilePanel items={items} />
+      ) : profil ? (
         <Card className="p-6">
           <div className="mb-5 flex items-center justify-between">
             <div>

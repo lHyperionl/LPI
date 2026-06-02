@@ -33,7 +33,7 @@ export function Playground({
           title="Vyber si používateľa"
           desc="Každý používateľ má vlastné preferencie naprieč doménami. Výber riadi celý playground nižšie."
         />
-        <UserSwitcher users={users} selected={user} onSelect={setUser} />
+        <UserSwitcher users={users} items={items} selected={user} onSelect={setUser} />
       </Section>
 
       {/* 3 — Odporucania */}

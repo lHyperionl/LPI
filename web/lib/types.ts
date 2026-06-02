@@ -105,6 +105,11 @@ export interface Statistika {
   serialy: number;
 }
 
+export interface VlastnyOdporucanie {
+  polozka: Polozka;
+  skore: number;
+}
+
 // Vysvetlenie odporucania (z /api/explain)
 export interface Vysvetlenie {
   pouzivatel: string;
